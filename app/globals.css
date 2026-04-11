@@ -115,6 +115,14 @@
   .snap-container {
     /* No scroll-snap — natural scroll with min-h-screen sections creates cinematic pacing */
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ─── Hero entrance animations ───────────────────────────────────── */

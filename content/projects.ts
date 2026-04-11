@@ -34,7 +34,7 @@ export interface CaseStudySection {
   stats?: { value: string; label: string }[]
   insight?: string
   items?: { title: string; body: string; status?: 'winner' | 'tested' | ''; image?: string }[]
-  quotes?: { text: string; context: string }[]
+  quotes?: { text: string; context: string; source?: { name: string; logo?: string } }[]
   caption?: string
   number?: string
   result?: string
@@ -45,6 +45,7 @@ export interface CaseStudySection {
   left?: { heading: string; body: string }
   right?: { heading: string; body: string }
   options?: { label: string; description: string; outcome?: string; image?: string }[]
+  beforeAfter?: { before: string; after: string; beforeLabel?: string; afterLabel?: string; device?: 'ipad' | 'none' }
 }
 
 export interface CaseStudy {
@@ -387,7 +388,7 @@ export const projects: Project[] = [
     company: 'SingHealth',
     year: '2017–2018',
     category: 'Healthcare · Consumer',
-    summary: 'Redesigned the patient-facing app serving 4M+ patients across Singapore\'s largest healthcare cluster.',
+    summary: 'Redesigned the patient-facing app serving 3,000 patients daily across Singapore\'s largest healthcare cluster.',
     coverImage: '/images/singhealth-cover.png',
     accent: '#E85D26',
     caseStudy: {
@@ -404,8 +405,11 @@ export const projects: Project[] = [
           type: 'text',
           bg: 'light',
           label: 'The Problem',
-          heading: 'Healthcare UX that worked against patients.',
-          body: 'Appointment booking was buried under 5 navigation levels. Lab results were delayed and hard to interpret. Patients defaulted to calling the hospital.',
+          heading: 'Nurses were drowning in paperwork.',
+          body: [
+            'Nurses spent significant time on manual documentation — recording medication times, tracking meal intake, logging stool output, and flagging anything out of the norm. This took them away from direct patient care.',
+            'During COVID, the challenge intensified: physical contact between staff and patients carried infection risk. MyCare and the nurse companion app enabled safer distancing while maintaining care quality.',
+          ],
         },
         {
           type: 'columns',
@@ -428,22 +432,64 @@ export const projects: Project[] = [
           ],
         },
         {
-          type: 'outcome',
+          type: 'quotes',
           bg: 'light',
+          label: 'Patient & caregiver feedback',
+          heading: 'What users said about MyCare.',
+          quotes: [
+            {
+              text: 'Being able to monitor my own vital signs and test results in real-time — without waiting for a doctor\'s ward round — made me feel more in control.',
+              context: 'Empowerment through information',
+            },
+            {
+              text: 'Requesting a hot drink or extra pillow through the app is so much easier than pressing the call bell and waiting.',
+              context: 'Convenience & efficiency',
+            },
+            {
+              text: 'Seeing continuous improvements in my child\'s vitals on the tablet gave me significant relief and reassurance.',
+              context: 'Anxiety reduction for caregivers',
+            },
+            {
+              text: 'Knowing my medical data is automatically wiped from the iPad when I\'m discharged — that matters.',
+              context: 'Privacy & security',
+            },
+          ],
+        },
+        {
+          type: 'outcome',
+          bg: 'dark',
           impact: [
             { value: '↓40%', label: 'Booking time reduced' },
             { value: '4M+', label: 'Patients served' },
+            { value: 'Top 10', label: 'World\'s Best Smart Hospitals 2026 — Newsweek (SGH & CGH)' },
           ],
-          reflections: [
-            {
-              title: 'Clinical stakeholders need prototypes, not decks',
-              body: 'Doctors and nurses responded to clickable prototypes. Static mockups didn\'t communicate flow.',
-            },
-            {
-              title: 'Accessibility is non-negotiable in healthcare',
-              body: 'Large touch targets, high contrast, and font scaling were baseline — not nice-to-haves.',
-            },
-          ],
+        },
+        {
+          type: 'comparison',
+          bg: 'light',
+          label: 'If I redesigned it today',
+          heading: 'Better accessibility for elderly patients.',
+          body: 'User feedback confirmed that font sizes and contrast weren\'t sufficient for older patients with weaker eyesight. I\'d push harder on WCAG AAA contrast, larger default type, and multi-language support beyond English and Chinese.',
+          beforeAfter: {
+            before: '/images/singhealth-before.png',
+            after: '/images/singhealth-after.png',
+            beforeLabel: 'Original',
+            afterLabel: 'Redesign',
+            device: 'ipad',
+          },
+        },
+        {
+          type: 'comparison',
+          bg: 'dark',
+          heading: 'Richer feedback signals for every action.',
+          body: 'The app relied on visual confirmation alone. Adding audio cues and haptic feedback for key actions — like confirming a request was sent — would reduce uncertainty, especially for users less comfortable with tablets.',
+          beforeAfter: {
+            before: '/images/singhealth-before-2.png',
+            after: '/images/singhealth-after-2.png',
+            beforeLabel: 'Original',
+            afterLabel: 'Redesign',
+            device: 'ipad',
+          },
         },
       ],
     },

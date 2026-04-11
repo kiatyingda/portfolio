@@ -6,6 +6,8 @@ import ImagePlaceholder, { MiniPhoneSketch } from '@/components/ui/ImagePlacehol
 import SplineMockup from '@/components/ui/SplineMockup'
 import FadeIn from '@/components/ui/FadeIn'
 import ConceptGrid from '@/components/sections/ConceptGrid'
+import FluidType from '@/components/ui/FluidType'
+import BeforeAfter from '@/components/ui/BeforeAfter'
 
 export async function generateStaticParams() {
   return projects.map((p) => ({ slug: p.slug }))
@@ -158,21 +160,43 @@ function GridSection({ s }: { s: CaseStudySection & { type: 'grid' } }) {
 
 function QuotesSection({ s }: { s: CaseStudySection & { type: 'quotes' } }) {
   return (
-    <FlowSection bg={s.bg}>
-      <SLabel label={s.label} />
-      <SHeading heading={s.heading} />
-      {s.quotes && (
-        <div className="mt-10">
-          {s.quotes.map((q, i) => (
-            <div key={i} className="py-8 border-t border-th-bsub last:border-b">
-              <p className="font-display font-bold text-[24px] md:text-[32px] text-th-text leading-[1.25] mb-4 max-w-[720px]"
-                style={{ letterSpacing: '-0.02em' }}>{q.text}</p>
-              <p className="font-sans text-[14px] text-th-text2">{q.context}</p>
-            </div>
-          ))}
+    <FadeIn>
+      <div className={`${wrap(s.bg)} py-20 md:py-28 border-t border-th-bsub`}>
+        <div className="max-w-[1136px] mx-auto px-8 md:px-12">
+          <SLabel label={s.label} />
+          <SHeading heading={s.heading} />
         </div>
-      )}
-    </FlowSection>
+        {s.quotes && (
+          <div className="mt-12 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-4 md:gap-5 pb-4" style={{ paddingLeft: 'max(2rem, calc((100vw - 1136px) / 2 + 3rem))', paddingRight: 'max(2rem, calc((100vw - 1136px) / 2 + 3rem))' }}>
+              {s.quotes.map((q, i) => (
+                <div key={i} className="relative shrink-0 w-[340px] md:w-[440px] rounded-[16px] flex flex-col overflow-hidden"
+                  style={{ background: '#ffffff' }}>
+
+                  {/* Quote content */}
+                  <div className="px-8 md:px-10 pt-8 md:pt-10 pb-7 flex-1 flex flex-col">
+                    <span className="font-mono text-[11px] tracking-[0.12em] mb-4 block" style={{ color: '#AAAAAA' }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <p className="font-display text-[20px] md:text-[24px] leading-[1.3] flex-1"
+                      style={{ letterSpacing: '-0.02em', color: '#0A0A0A', fontWeight: 700 }}>&ldquo;{q.text}&rdquo;</p>
+                  </div>
+
+                  {/* Footer — matching horizontal + bottom padding */}
+                  <div className="px-8 md:px-10 pb-6 md:pb-7">
+                    <div className="pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+                      <p className="font-mono text-[10px] tracking-[0.12em] uppercase" style={{ color: '#999999' }}>{q.context}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {/* End spacer for scroll breathing room */}
+              <div className="shrink-0 w-4 md:w-8" />
+            </div>
+          </div>
+        )}
+      </div>
+    </FadeIn>
   )
 }
 
@@ -216,6 +240,18 @@ function ComparisonSection({ s }: { s: CaseStudySection & { type: 'comparison' }
     <FlowSection bg={s.bg}>
       <SLabel label={s.label} />
       <SHeading heading={s.heading} />
+      <SBody body={s.body} />
+      {s.beforeAfter && (
+        <div className="mt-10">
+          <BeforeAfter
+            before={s.beforeAfter.before}
+            after={s.beforeAfter.after}
+            beforeLabel={s.beforeAfter.beforeLabel}
+            afterLabel={s.beforeAfter.afterLabel}
+            device={s.beforeAfter.device}
+          />
+        </div>
+      )}
       {s.options && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0 mt-10 border-t border-th-bsub">
           {s.options.map((opt, i) => (
@@ -240,12 +276,15 @@ function OutcomeSection({ s }: { s: CaseStudySection & { type: 'outcome' } }) {
     <CinematicSlide bg={s.bg}>
       <SLabel label={s.label} />
       {s.impact && (
-        <div className={`grid grid-cols-1 ${({ 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' } as Record<number, string>)[Math.min(s.impact.length, 3)] ?? 'md:grid-cols-2'} gap-0 border-t border-th-bsub mb-16`}>
+        <div className="mb-16">
           {s.impact.map((item, i) => (
-            <div key={i} className={`pt-8 pb-4 ${i < s.impact!.length - 1 ? 'md:pr-12 md:border-r border-th-bsub md:mr-12' : ''}`}>
-              <p className="font-display font-bold text-[48px] md:text-[64px] text-th-text leading-none mb-2"
-                style={{ letterSpacing: '-0.03em' }}>{item.value}</p>
-              <p className="font-sans text-[14px] text-th-text2">{item.label}</p>
+            <div key={i} className={`${i > 0 ? 'mt-8 pt-8 border-t border-th-bsub' : ''}`}>
+              <FluidType
+                text={item.value}
+                minSize={48}
+                maxSize={180}
+              />
+              <p className="font-sans text-[16px] text-th-text2 mt-6">{item.label}</p>
             </div>
           ))}
         </div>
@@ -290,8 +329,9 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
   if (!project) notFound()
 
   const cs = project.caseStudy
-  const nextIdx = projects.findIndex((p) => p.slug === slug) + 1
-  const next = projects[nextIdx % projects.length]
+  const currentIdx = projects.findIndex((p) => p.slug === slug)
+  const prev = projects[(currentIdx - 1 + projects.length) % projects.length]
+  const next = projects[(currentIdx + 1) % projects.length]
 
   const accent = project.accent
 
@@ -304,7 +344,8 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
       <section className="relative min-h-screen bg-th-bg">
         {(project.heroVideo || project.splineUrl) ? (
           <>
-            <div className="absolute inset-0 md:left-[35%]">
+            {/* Desktop: absolute right side. Mobile: stacked below text */}
+            <div className="hidden md:block absolute inset-0 left-[35%]">
               {project.heroVideo ? (
                 <video
                   src={project.heroVideo}
@@ -318,12 +359,27 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
                 <SplineMockup url={project.splineUrl!} />
               )}
             </div>
-            <div className="relative z-10 min-h-screen flex items-center">
-              <div className="max-w-[1136px] mx-auto w-full px-8 md:px-12">
+            <div className="relative z-10 min-h-screen flex flex-col md:justify-center">
+              <div className="max-w-[1136px] mx-auto w-full px-8 md:px-12 pt-24 md:pt-0">
                 <p className="font-sans text-[14px] font-medium mb-8" style={accent ? { color: accent } : undefined}>{cs.label}</p>
-                <h1 className="font-display font-bold text-[48px] sm:text-[64px] md:text-[80px] text-th-text leading-[1.08] mb-4 max-w-[550px]"
+                <h1 className="font-display font-bold text-[48px] sm:text-[64px] md:text-[80px] text-th-text leading-[1.08] mb-4 md:max-w-[550px]"
                   style={{ letterSpacing: '-0.03em' }}>{project.title}</h1>
                 <p className="font-sans text-[18px] text-th-text2">{project.company}</p>
+              </div>
+              {/* Mobile: video/3D below text */}
+              <div className="md:hidden w-full h-[50vh] mt-8">
+                {project.heroVideo ? (
+                  <video
+                    src={project.heroVideo}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <SplineMockup url={project.splineUrl!} />
+                )}
               </div>
             </div>
           </>
@@ -348,9 +404,9 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
         )}
       </section>
 
-      {/* Overview — compact metadata bar with accent line */}
+      {/* Overview — compact metadata bar */}
       <FadeIn>
-        <div className="bg-th-bg2 border-t-2 border-th-bsub" style={accent ? { borderTopColor: accent } : undefined}>
+        <div className="bg-th-bg2 border-t border-th-bsub">
           <div className="max-w-[1136px] mx-auto px-8 md:px-12 py-10 grid grid-cols-2 sm:grid-cols-4 gap-6">
             {[
               { label: 'Role', value: cs.role },
@@ -376,22 +432,52 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
       {/* ═══ ACT 3: THE PAYOFF ═══ */}
       {/* (OutcomeSection already renders as CinematicSlide) */}
 
-      {/* Next project — full-screen cinematic */}
+      {/* Project navigation — prev / next */}
       <FadeIn>
-        <div className="min-h-screen bg-th-bg border-t border-th-bsub flex items-center">
+        <div className="bg-th-bg border-t border-th-bsub">
           <div className="max-w-[1136px] mx-auto w-full px-8 md:px-12 py-16">
-            <p className="font-sans text-[12px] text-th-text3 mb-6">Next project</p>
-            <h2 className="font-display font-bold text-[40px] md:text-[64px] text-th-text leading-[1.08] mb-4"
-              style={{ letterSpacing: '-0.03em' }}>{next.title}</h2>
-            <p className="font-sans text-[16px] text-th-text2 mb-10">{next.company} · {next.year}</p>
-            <div className="flex gap-4">
-              <Link href={`/work/${next.slug}`}
-                className="inline-flex items-center px-6 py-3 rounded-pill bg-th-text text-th-bg font-sans text-[14px] font-medium hover:opacity-80 transition-opacity duration-200">
-                View case study
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+              {/* Previous */}
+              <Link href={`/work/${prev.slug}`}
+                className="group flex items-center gap-6 py-12 md:pr-12 md:border-r border-th-bsub border-b md:border-b-0">
+                <span className="shrink-0 w-10 h-10 rounded-full border border-th-border flex items-center justify-center group-hover:bg-th-chip transition-colors duration-200">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-th-text2 group-hover:text-th-text transition-colors duration-200">
+                    <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <p className="font-sans text-[12px] text-th-text3 mb-1.5">Previous</p>
+                  <p className="font-display font-bold text-[20px] md:text-[24px] text-th-text leading-tight group-hover:opacity-70 transition-opacity duration-200"
+                    style={{ letterSpacing: '-0.02em' }}>{prev.title}</p>
+                  <p className="font-sans text-[13px] text-th-text3 mt-1">{prev.company}</p>
+                </div>
               </Link>
+
+              {/* Next */}
+              <Link href={`/work/${next.slug}`}
+                className="group flex items-center gap-6 py-12 md:pl-12 flex-row-reverse md:text-right">
+                <span className="shrink-0 w-10 h-10 rounded-full border border-th-border flex items-center justify-center group-hover:bg-th-chip transition-colors duration-200">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-th-text2 group-hover:text-th-text transition-colors duration-200">
+                    <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <p className="font-sans text-[12px] text-th-text3 mb-1.5">Next</p>
+                  <p className="font-display font-bold text-[20px] md:text-[24px] text-th-text leading-tight group-hover:opacity-70 transition-opacity duration-200"
+                    style={{ letterSpacing: '-0.02em' }}>{next.title}</p>
+                  <p className="font-sans text-[13px] text-th-text3 mt-1">{next.company}</p>
+                </div>
+              </Link>
+            </div>
+
+            {/* Back to all work */}
+            <div className="pt-8 border-t border-th-bsub mt-4">
               <Link href="/"
-                className="inline-flex items-center px-6 py-3 rounded-pill border border-th-border font-sans text-[14px] font-medium text-th-text2 hover:text-th-text hover:bg-th-chip transition-all duration-200">
-                Back to work
+                className="inline-flex items-center font-sans text-[13px] text-th-text3 hover:text-th-text transition-colors duration-200">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="mr-2">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                All projects
               </Link>
             </div>
           </div>
