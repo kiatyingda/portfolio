@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "portfolio",
-      "runtimeExecutable": "/usr/bin/python3",
-      "runtimeArgs": ["-m", "http.server", "3456", "-d", "/Users/kiatyingda/Claude/Portfolio"],
-      "port": 3456
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
     }
   ]
 }

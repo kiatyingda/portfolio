@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Theme tokens — Uber-inspired ───────────────────────────── */
+
+/* Dark (default) */
+:root,
+[data-theme="dark"] {
+  --bg:          #000000;
+  --bg-2:        #0a0a0a;
+  --bg-3:        #111111;
+  --bg-4:        #1a1a1a;
+  --text:        #ffffff;
+  --text-2:      #afafaf;
+  --text-3:      #4b4b4b;
+  --text-4:      rgba(255, 255, 255, 0.18);
+  --border:      rgba(255, 255, 255, 0.10);
+  --border-sub:  rgba(255, 255, 255, 0.06);
+  --accent:      #ffffff;
+  --accent-glow: rgba(255, 255, 255, 0.08);
+  --chip:        #1a1a1a;
+  --hover:       #222222;
+  --shadow:      rgba(255, 255, 255, 0.06);
+}
+
+/* Light */
+[data-theme="light"] {
+  --bg:          #ffffff;
+  --bg-2:        #f7f7f7;
+  --bg-3:        #efefef;
+  --bg-4:        #e2e2e2;
+  --text:        #000000;
+  --text-2:      #4b4b4b;
+  --text-3:      #afafaf;
+  --text-4:      rgba(0, 0, 0, 0.18);
+  --border:      rgba(0, 0, 0, 0.10);
+  --border-sub:  rgba(0, 0, 0, 0.06);
+  --accent:      #000000;
+  --accent-glow: rgba(0, 0, 0, 0.08);
+  --chip:        #efefef;
+  --hover:       #e2e2e2;
+  --shadow:      rgba(0, 0, 0, 0.12);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+  }
+
+  ::selection {
+    background: var(--accent-glow);
+  }
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────── */
+@layer utilities {
+  .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .grain {
+    position: relative;
+  }
+  .grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    opacity: 0.018;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .grain > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .ring-accent-hover:hover {
+    box-shadow: var(--shadow) 0px 4px 16px 0px;
+  }
+
+  .nav-link {
+    position: relative;
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: var(--text);
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 0.22s ease;
+  }
+  .nav-link:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  .snap-container {
+    /* No scroll-snap — natural scroll with min-h-screen sections creates cinematic pacing */
+  }
+}
+
+/* ─── Hero entrance animations ───────────────────────────────────── */
+@keyframes enterUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-enter {
+  opacity: 0;
+  animation: enterUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.hero-enter-1 { animation-delay: 0.05s; }
+.hero-enter-2 { animation-delay: 0.18s; }
+.hero-enter-3 { animation-delay: 0.38s; }
+.hero-enter-4 { animation-delay: 0.56s; }
