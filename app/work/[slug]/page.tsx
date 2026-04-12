@@ -7,6 +7,8 @@ import FadeIn from '@/components/ui/FadeIn'
 import ConceptGrid from '@/components/sections/ConceptGrid'
 import FluidType from '@/components/ui/FluidType'
 import BeforeAfter from '@/components/ui/BeforeAfter'
+import ProjectSideNav from '@/components/ui/ProjectSideNav'
+import BracketLink from '@/components/ui/BracketLink'
 
 export async function generateStaticParams() {
   return projects.map((p) => ({ slug: p.slug }))
@@ -22,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 // ─── Shared primitives (ASCII style) ─────────────────────────────
 function SLabel({ label }: { label?: string }) {
   if (!label) return null
-  return <p className="font-display text-[11px] font-bold text-th-text tracking-[0.12em] mb-6">■ {label}</p>
+  return <p className="font-display text-[11px] font-bold text-th-text tracking-[0.12em] mb-6">▶ {label}</p>
 }
 
 function SHeading({ heading, large }: { heading?: string; large?: boolean }) {
@@ -329,6 +331,8 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
   return (
     <div className="overflow-x-hidden">
 
+      <ProjectSideNav prev={{ slug: prev.slug, title: prev.title }} next={{ slug: next.slug, title: next.title }} />
+
       {/* Hero */}
       <section className="relative min-h-screen bg-th-bg">
         {project.heroVideo ? (
@@ -399,31 +403,31 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
           <div className="max-w-[1136px] mx-auto w-full px-8 md:px-12 py-16">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
               <Link href={`/work/${prev.slug}`}
-                className="group flex items-center gap-5 py-12 md:pr-12 md:border-r border-th-border border-b md:border-b-0 hover:opacity-60 transition-opacity duration-200">
-                <span className="font-mono text-[11px] text-th-text tracking-[0.1em] shrink-0">[◂]</span>
+                className="group flex items-center gap-5 py-12 md:pr-12 md:border-r border-th-border border-b md:border-b-0 hover:bg-black hover:text-white transition-[background-color,color] duration-100">
+                <span className="font-mono text-[11px] text-th-text group-hover:text-white tracking-[0.1em] shrink-0">[◂]</span>
                 <div>
-                  <p className="font-mono text-[9px] text-th-text3 tracking-[0.1em] mb-1.5">Previous</p>
-                  <p className="font-display font-extralight text-[18px] md:text-[22px] text-th-text leading-tight"
+                  <p className="font-mono text-[9px] text-th-text3 group-hover:text-white/60 tracking-[0.1em] mb-1.5">Previous</p>
+                  <p className="font-display font-extralight text-[18px] md:text-[22px] text-th-text group-hover:text-white leading-tight"
                     style={{ letterSpacing: '0.02em' }}>{prev.title}</p>
                 </div>
               </Link>
 
               <Link href={`/work/${next.slug}`}
-                className="group flex items-center gap-5 py-12 md:pl-12 flex-row-reverse md:text-right hover:opacity-60 transition-opacity duration-200">
-                <span className="font-mono text-[11px] text-th-text tracking-[0.1em] shrink-0">[▸]</span>
+                className="group flex items-center gap-5 py-12 md:pl-12 flex-row-reverse md:text-right hover:bg-black hover:text-white transition-[background-color,color] duration-100">
+                <span className="font-mono text-[11px] text-th-text group-hover:text-white tracking-[0.1em] shrink-0">[▸]</span>
                 <div>
-                  <p className="font-mono text-[9px] text-th-text3 tracking-[0.1em] mb-1.5">Next</p>
-                  <p className="font-display font-extralight text-[18px] md:text-[22px] text-th-text leading-tight"
+                  <p className="font-mono text-[9px] text-th-text3 group-hover:text-white/60 tracking-[0.1em] mb-1.5">Next</p>
+                  <p className="font-display font-extralight text-[18px] md:text-[22px] text-th-text group-hover:text-white leading-tight"
                     style={{ letterSpacing: '0.02em' }}>{next.title}</p>
                 </div>
               </Link>
             </div>
 
             <div className="pt-8 border-t border-th-border mt-4">
-              <Link href="/"
-                className="inline-flex items-center font-mono text-[10px] text-th-text3 tracking-[0.1em] hover:text-th-text transition-opacity duration-200">
-                [◂] All projects
-              </Link>
+              <div className="inline-flex items-center gap-1.5">
+                <span className="font-mono text-[10px] text-th-text3 tracking-[0.1em]">◂</span>
+                <BracketLink href="/">All projects</BracketLink>
+              </div>
             </div>
           </div>
         </div>

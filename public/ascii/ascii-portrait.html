@@ -29,8 +29,9 @@ import { prepareWithSegments, layoutWithLines } from 'https://esm.sh/@chenglou/p
 // ── Config ──────────────────────────────────────────────
 const FONT_SIZE = 9
 const FONT = `${FONT_SIZE}px "Courier New"`
+const BOLD_FONT = `bold ${FONT_SIZE}px "Courier New"`
 const LINE_HEIGHT = FONT_SIZE + 2
-const MAX_PARTICLES = 4000
+const MAX_PARTICLES = 5000
 const MOUSE_RADIUS = 60
 const MOUSE_R2 = MOUSE_RADIUS * MOUSE_RADIUS
 const GRAVITY = 0.4
@@ -55,8 +56,8 @@ const KW_STREAM = (() => {
 const ALPHA_LUT = new Float32Array(256)
 for (let i = 0; i < 256; i++) {
   const t = i / 255
-  const curved = Math.pow(t, 0.6)
-  ALPHA_LUT[i] = 0.2 + curved * 0.8
+  const curved = Math.pow(t, 0.5)
+  ALPHA_LUT[i] = 0.15 + curved * 0.85
 }
 
 // ── State (SoA for cache-friendly access) ───────────────
@@ -66,11 +67,12 @@ const imgCanvas = document.getElementById('img')
 const imgCtx = imgCanvas.getContext('2d')
 
 let N = 0
-let px, py, ox, oy, vx, vy, rot, rotV, dark, falling, fallTime
+let px, py, ox, oy, vx, vy, rot, rotV, dark, bold, falling, fallTime
 let chars = []
 
-// Character atlas: pre-rendered offscreen canvases per char
-let atlas = {} // char -> { canvas, w, h }
+// Character atlases: pre-rendered offscreen canvases per char
+let atlas = {}     // char -> { canvas, w, h } — normal weight
+let boldAtlas = {} // char -> { canvas, w, h } — bold weight (spectacles zone)
 
 let mouseX = -9999, mouseY = -9999
 let charW = FONT_SIZE * 0.6
@@ -96,6 +98,9 @@ function setupCanvas() {
   canvas.style.width = W + 'px'
   canvas.style.height = H + 'px'
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  // Fill white immediately so opaque canvas never shows black
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, W, H)
 }
 
 // ── Allocate SoA arrays ─────────────────────────────────
@@ -110,6 +115,7 @@ function allocate(n) {
   rot = new Float32Array(n)
   rotV = new Float32Array(n)
   dark = new Uint8Array(n)
+  bold = new Uint8Array(n)
   falling = new Uint8Array(n)
   fallTime = new Float64Array(n)
   chars = new Array(n)
@@ -120,20 +126,28 @@ function allocate(n) {
 // drawImage from a cached bitmap is 10-50x faster than fillText.
 function buildAtlas() {
   atlas = {}
+  boldAtlas = {}
   const seen = new Set(chars)
+  const lw = Math.ceil(charW) + ATLAS_PAD * 2
+  const lh = FONT_SIZE + ATLAS_PAD * 2
   for (const ch of seen) {
+    // Normal weight
     const c = document.createElement('canvas')
-    const lw = Math.ceil(charW) + ATLAS_PAD * 2
-    const lh = FONT_SIZE + ATLAS_PAD * 2
-    c.width = lw * dpr
-    c.height = lh * dpr
+    c.width = lw * dpr; c.height = lh * dpr
     const cx = c.getContext('2d')
-    cx.scale(dpr, dpr)
-    cx.font = FONT
-    cx.textBaseline = 'top'
-    cx.fillStyle = '#000'
+    cx.scale(dpr, dpr); cx.font = FONT
+    cx.textBaseline = 'top'; cx.fillStyle = '#000'
     cx.fillText(ch, ATLAS_PAD, ATLAS_PAD)
     atlas[ch] = { canvas: c, w: lw, h: lh }
+
+    // Bold weight (for spectacle zone)
+    const bc = document.createElement('canvas')
+    bc.width = lw * dpr; bc.height = lh * dpr
+    const bx = bc.getContext('2d')
+    bx.scale(dpr, dpr); bx.font = BOLD_FONT
+    bx.textBaseline = 'top'; bx.fillStyle = '#000'
+    bx.fillText(ch, ATLAS_PAD, ATLAS_PAD)
+    boldAtlas[ch] = { canvas: bc, w: lw, h: lh }
   }
 }
 
@@ -158,54 +172,128 @@ function processImage(img) {
   imgCtx.drawImage(img, 0, 0, drawW, drawH)
   const imgData = imgCtx.getImageData(0, 0, imgCanvas.width, imgCanvas.height)
   const d = imgData.data
+  const iW = imgCanvas.width
+  const iH = imgCanvas.height
 
-  const cx = drawW / 2, cy = drawH * 0.46
-  const rxI = 1 / (drawW * 0.48), ryI = 1 / (drawH * 0.56)
+  // Wider ellipse to show ears and more facial structure
+  const ecx = drawW / 2, ecy = drawH * 0.45
+  const rxI = 1 / (drawW * 0.52), ryI = 1 / (drawH * 0.58)
 
-  // First pass: auto-contrast
+  // Cell dimensions for area-average sampling
+  const cellW = Math.max(1, Math.round(charW))
+  const cellH = Math.max(1, Math.round(LINE_HEIGHT))
+
+  // ── Pass 1: Build brightness grid with area-average sampling ──
+  // Averages all pixels in each character cell instead of sampling one pixel.
+  // This captures subtle tonal differences for features like nose, lips, ears.
+  const brGrid = new Float32Array(rows * cols)
   const brVals = []
+
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const sx = (col * charW - offX) | 0
       const sy = (row * LINE_HEIGHT - offY) | 0
-      if (sx < 0 || sx >= imgCanvas.width || sy < 0 || sy >= imgCanvas.height) continue
-      const ex = (sx - cx) * rxI, ey = (sy - cy) * ryI
+      if (sx < 0 || sx >= iW || sy < 0 || sy >= iH) continue
+      const ex = (sx - ecx) * rxI, ey = (sy - ecy) * ryI
       if (ex * ex + ey * ey > 1) continue
-      const idx = (sy * imgCanvas.width + sx) << 2
-      const br = (0.299 * d[idx] + 0.587 * d[idx+1] + 0.114 * d[idx+2]) / 255
-      if (br > 0.03) brVals.push(br)
+
+      // Area-average brightness over the full character cell
+      let totalBr = 0, count = 0
+      const endX = Math.min(sx + cellW, iW)
+      const endY = Math.min(sy + cellH, iH)
+      for (let py = sy; py < endY; py++) {
+        for (let px = sx; px < endX; px++) {
+          const idx = (py * iW + px) << 2
+          totalBr += 0.299 * d[idx] + 0.587 * d[idx+1] + 0.114 * d[idx+2]
+          count++
+        }
+      }
+      const br = count > 0 ? totalBr / (count * 255) : 0
+      brGrid[row * cols + col] = br
+      if (br > 0.02) brVals.push(br)
     }
   }
+
+  // Auto-contrast with wider percentile range
   brVals.sort((a, b) => a - b)
-  const lo = brVals[(brVals.length * 0.05) | 0] || 0.05
-  const hi = brVals[(brVals.length * 0.95) | 0] || 0.5
+  const lo = brVals[(brVals.length * 0.03) | 0] || 0.03
+  const hi = brVals[(brVals.length * 0.97) | 0] || 0.5
   const rangeI = 1 / Math.max(0.1, hi - lo)
 
-  // Second pass: create particles
-  const tempPx = [], tempPy = [], tempDark = [], tempChars = []
+  // Normalize brightness grid
+  const normGrid = new Float32Array(rows * cols)
+  for (let i = 0; i < rows * cols; i++) {
+    normGrid[i] = Math.max(0, Math.min(1, (brGrid[i] - lo) * rangeI))
+  }
+
+  // ── Pass 2: Local contrast enhancement (unsharp mask) ──
+  // Compares each cell to its 3x3 neighborhood average.
+  // Boosts edges where facial features live (glasses frames, nose ridge, lips).
+  const enhGrid = new Float32Array(rows * cols)
+  const CONTRAST_STRENGTH = 0.4
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col
+      const center = normGrid[idx]
+      if (center === 0) { enhGrid[idx] = 0; continue }
+
+      let sum = 0, cnt = 0
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue
+          const nr = row + dr, nc = col + dc
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+            sum += normGrid[nr * cols + nc]
+            cnt++
+          }
+        }
+      }
+      const localAvg = cnt > 0 ? sum / cnt : center
+      enhGrid[idx] = Math.max(0, Math.min(1, center + (center - localAvg) * CONTRAST_STRENGTH))
+    }
+  }
+
+  // ── Pass 3: Create particles from enhanced grid ──
+  const tempPx = [], tempPy = [], tempDark = [], tempChars = [], tempBold = []
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const sx = (col * charW - offX) | 0
       const sy = (row * LINE_HEIGHT - offY) | 0
-      if (sx < 0 || sx >= imgCanvas.width || sy < 0 || sy >= imgCanvas.height) continue
-      const ex = (sx - cx) * rxI, ey = (sy - cy) * ryI
+      if (sx < 0 || sx >= iW || sy < 0 || sy >= iH) continue
+      const ex = (sx - ecx) * rxI, ey = (sy - ecy) * ryI
       const ed = ex * ex + ey * ey
       if (ed > 1) continue
       const fade = ed > 0.6 ? 1 - (ed - 0.6) * 2.5 : 1
 
-      const idx = (sy * imgCanvas.width + sx) << 2
-      const br = Math.max(0, Math.min(1, ((0.299 * d[idx] + 0.587 * d[idx+1] + 0.114 * d[idx+2]) / 255 - lo) * rangeI))
-      if (br < 0.06) continue
+      let br = enhGrid[row * cols + col]
+      const imgY = sy / drawH
+      const imgX = sx / drawW
+
+      // Glasses zone: only the actual frame pixels get bold+black treatment
+      // Narrow bounds + brightness check = only dark objects (frame material) affected
+      const inGlassesZone = imgY > 0.33 && imgY < 0.44 && imgX > 0.20 && imgX < 0.80
+      const rawBr = brGrid[row * cols + col] // 0=dark(frame), 1=bright(skin)
+      const isFrame = inGlassesZone && rawBr < 0.38
+
+      // Shoulder zone (below 68%): reduce density for cleaner silhouette
+      if (imgY > 0.68) {
+        const t = (imgY - 0.68) / 0.32 // 0→1 from 68% to bottom
+        br *= 1 - t * 0.65             // fade to 35% at bottom edge
+      }
+
+      if (br < 0.03 && !isFrame) continue
 
       const si = (row * cols + col) % KW_STREAM.length
       const ch = KW_STREAM[si]
-      if (ch === ' ') continue
+      if (ch === ' ' && !isFrame) continue
 
       tempPx.push(col * charW)
       tempPy.push(row * LINE_HEIGHT)
-      tempDark.push((br * fade * 255) | 0)
-      tempChars.push(ch)
+      // Frame pixels: bold + full black; everything else: normal
+      tempDark.push(isFrame ? 255 : (br * fade * 255) | 0)
+      tempChars.push(isFrame && ch === ' ' ? '█' : ch)
+      tempBold.push(isFrame ? 1 : 0)
     }
   }
 
@@ -226,6 +314,7 @@ function processImage(img) {
     px[j] = ox[j] + (Math.random() - 0.5) * W * 0.5
     py[j] = oy[j] + (Math.random() - 0.5) * H * 0.5
     dark[j] = tempDark[i]
+    bold[j] = tempBold[i]
     chars[j] = tempChars[i]
   }
 
@@ -314,7 +403,7 @@ function animate(timestamp) {
     const a = ALPHA_LUT[dark[i]]
     if (a !== lastA) { ctx.globalAlpha = a; lastA = a }
 
-    const at = atlas[chars[i]]
+    const at = (bold[i] ? boldAtlas : atlas)[chars[i]]
     if (!at) continue
 
     const r = rot[i]

@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { siteConfig } from '@/content/siteConfig'
+import BracketLink from '@/components/ui/BracketLink'
 
 export default function Hero() {
   return (
@@ -14,7 +14,7 @@ export default function Hero() {
             {/* Left — copy */}
             <div>
               <p className="font-mono text-[11px] text-th-text3 tracking-[0.1em] mb-10 md:mb-12 hero-enter hero-enter-1">
-                ■ {siteConfig.title}
+                ▶▶▶ {siteConfig.title}
               </p>
 
               <h1
@@ -28,13 +28,9 @@ export default function Hero() {
                 {siteConfig.heroCopy.body}
               </p>
 
-              <div className="hero-enter hero-enter-4">
-                <Link
-                  href="/#work"
-                  className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] text-th-text hover:opacity-60 transition-opacity duration-200"
-                >
-                  [▸] {siteConfig.heroCopy.cta}
-                </Link>
+              <div className="hero-enter hero-enter-4 inline-flex items-center gap-1.5">
+                <span className="font-mono text-[11px] tracking-[0.1em] text-th-text">▸</span>
+                <BracketLink href="/#work">{siteConfig.heroCopy.cta}</BracketLink>
               </div>
             </div>
 
