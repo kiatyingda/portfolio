@@ -68,10 +68,10 @@ export default function FluidType({
   return (
     <div ref={containerRef} className={className}>
       <span
-        className="font-display font-bold text-th-text block leading-none"
+        className="font-display font-extralight text-th-text block leading-none"
         style={{
           fontSize: `${fontSize}px`,
-          letterSpacing: '-0.03em',
+          letterSpacing: '0.02em',
           ...style,
         }}
       >

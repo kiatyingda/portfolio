@@ -1,59 +1,40 @@
 import type { Metadata } from 'next'
-import { Plus_Jakarta_Sans, Inter, IBM_Plex_Mono } from 'next/font/google'
+import { Inter_Tight, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
 
-// Plus Jakarta Sans — geometric sans for display headlines (GT Walsheim substitute)
-const plusJakartaSans = Plus_Jakarta_Sans({
+// Inter Tight — geometric sans for all text (thin weights for display, regular for body)
+const interTight = Inter_Tight({
   subsets: ['latin'],
   variable: '--font-display',
+  weight: ['100', '200', '300', '400', '500'],
   display: 'swap',
 })
 
-// Inter Variable — body and UI with Framer's OpenType features applied in CSS
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-})
-
-// IBM Plex Mono — labels, numbers, structural elements
+// IBM Plex Mono — labels, metadata, structural elements
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
-  weight: ['400', '500'],
+  weight: ['300', '400'],
   display: 'swap',
 })
 
 export const metadata: Metadata = {
   title: 'Kiat Yingda — Product Designer',
   description:
-    'Senior Product Designer. I design consumer products at scale — most recently at Grab, where I led product design for ride-hailing across Southeast Asia.',
+    'Senior Product Designer specializing in complex consumer products at scale — healthcare, ride-hailing, Web3.',
   openGraph: {
     title: 'Kiat Yingda — Product Designer',
     description:
-      'Senior Product Designer. I design consumer products at scale — most recently at Grab.',
+      'Senior Product Designer specializing in complex consumer products at scale.',
     type: 'website',
   },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" className={`${plusJakartaSans.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
-      {/* Zero-flash theme persistence — runs before React hydrates */}
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                var t = localStorage.getItem('theme') || 'dark';
-                document.documentElement.setAttribute('data-theme', t);
-              } catch(e) {}
-            `,
-          }}
-        />
-      </head>
-      <body className="bg-th-bg text-th-text antialiased font-sans">
+    <html lang="en" className={`${interTight.variable} ${ibmPlexMono.variable}`}>
+      <body className="bg-th-bg text-th-text antialiased font-display">
         <Nav />
         <main>{children}</main>
       </body>

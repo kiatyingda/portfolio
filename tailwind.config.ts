@@ -10,7 +10,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         display: ['var(--font-display)', 'system-ui', 'Helvetica Neue', 'sans-serif'],
-        sans: ['var(--font-inter)', 'system-ui', 'Helvetica Neue', 'sans-serif'],
+        sans: ['var(--font-display)', 'system-ui', 'Helvetica Neue', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'SF Mono', 'Menlo', 'monospace'],
       },
       colors: {
@@ -26,16 +26,15 @@ const config: Config = {
         'th-bsub':   'var(--border-sub)',
         'th-accent': 'var(--accent)',
         'th-chip':   'var(--chip)',
-        'th-hover':  'var(--hover)',
       },
       borderRadius: {
-        'pill': '999px',
-        'card': '8px',
-        'card-lg': '12px',
+        'pill': '0px',
+        'card': '0px',
+        'card-lg': '0px',
       },
       boxShadow: {
-        'card': 'var(--shadow) 0px 4px 16px 0px',
-        'float': 'rgba(0,0,0,0.16) 0px 2px 8px 0px',
+        'card': 'none',
+        'float': 'none',
       },
     },
   },

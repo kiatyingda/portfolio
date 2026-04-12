@@ -1,30 +1,33 @@
 import { siteConfig } from '@/content/siteConfig'
+import BracketLink from '@/components/ui/BracketLink'
 
 export default function Footer() {
   const { name, email, linkedin, resumeUrl, footer } = siteConfig
 
   return (
-    <footer className="bg-th-bg border-t border-th-bsub">
-      <div className="max-w-[1136px] mx-auto px-8 md:px-12 py-14 flex flex-col md:flex-row items-start md:items-end justify-between gap-10">
-        <div>
-          <p className="font-sans text-[16px] text-th-text2 leading-[1.5] max-w-[420px] mb-5">
-            {footer.closing}
-          </p>
-          <p className="font-sans text-[12px] text-th-text3">{name} · {new Date().getFullYear()}</p>
+    <footer className="bg-th-bg border-t border-th-border">
+      <div className="max-w-[1136px] mx-auto px-8 md:px-12 py-14">
+        {/* Closing line */}
+        <p className="font-display text-[14px] font-light text-th-text2 leading-[1.6] tracking-[0.03em] max-w-[420px] mb-12">
+          {footer.closing}
+        </p>
+
+        {/* Bracket links row */}
+        <div className="flex flex-wrap gap-x-4 gap-y-3 mb-16">
+          <BracketLink href={`mailto:${email}`}>Email</BracketLink>
+          <BracketLink href={linkedin} external>LinkedIn</BracketLink>
+          <BracketLink href={resumeUrl}>Resume</BracketLink>
         </div>
-        <div className="flex flex-col items-start md:items-end gap-3">
-          <a href={`mailto:${email}`}
-            className="font-sans text-[14px] text-th-text2 hover:text-th-text transition-colors duration-200">
-            {email}
-          </a>
-          <a href={linkedin} target="_blank" rel="noopener noreferrer"
-            className="font-sans text-[14px] text-th-text2 hover:text-th-text transition-colors duration-200">
-            LinkedIn
-          </a>
-          <a href={resumeUrl}
-            className="font-sans text-[14px] text-th-text2 hover:text-th-text transition-colors duration-200">
-            Resume
-          </a>
+
+        {/* Bold wordmark — contrast against thin body */}
+        <div className="border-t border-th-border pt-8 flex items-end justify-between">
+          <p className="font-display font-black text-[48px] sm:text-[64px] md:text-[96px] lg:text-[120px] text-th-text leading-none tracking-tight italic"
+            style={{ letterSpacing: '-0.03em' }}>
+            KiatYingda
+          </p>
+          <span className="font-mono text-[10px] text-th-text3 tracking-[0.1em] mb-2 hidden md:block">
+            {new Date().getFullYear()}
+          </span>
         </div>
       </div>
     </footer>

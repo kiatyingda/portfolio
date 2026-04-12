@@ -25,11 +25,11 @@ export default function ConceptGrid({ items }: ConceptGridProps) {
           <button
             key={i}
             onClick={() => setLightboxIndex(i)}
-            className="p-6 rounded-card border border-th-bsub relative text-left group hover:border-th-border transition-colors duration-200 cursor-pointer"
+            className="p-6 border border-th-border relative text-left group hover:bg-th-bg2 transition-colors duration-200 cursor-pointer"
           >
             {item.status && (
-              <span className={`font-sans text-[12px] font-medium absolute top-6 right-6 px-3 py-1 rounded-pill ${
-                item.status === 'winner' ? 'bg-th-text text-th-bg' : 'bg-th-chip text-th-text'
+              <span className={`font-mono text-[9px] tracking-[0.1em] absolute top-6 right-6 px-3 py-1 ${
+                item.status === 'winner' ? 'bg-th-text text-th-bg' : 'border border-th-border text-th-text'
               }`}>
                 {item.status === 'winner' ? 'Shipped' : 'Tested'}
               </span>
@@ -37,8 +37,8 @@ export default function ConceptGrid({ items }: ConceptGridProps) {
             <div className="mb-4 flex justify-center opacity-50 group-hover:opacity-70 transition-opacity duration-200">
               <MiniPhoneSketch />
             </div>
-            <p className="font-sans text-[16px] font-medium text-th-text mb-2">{item.title}</p>
-            <p className="font-sans text-[14px] leading-[1.5] text-th-text2">{item.body}</p>
+            <p className="font-display text-[14px] font-light text-th-text tracking-[0.04em] mb-2">{item.title}</p>
+            <p className="font-display text-[13px] font-light leading-[1.6] text-th-text2 tracking-[0.03em]">{item.body}</p>
           </button>
         ))}
       </div>

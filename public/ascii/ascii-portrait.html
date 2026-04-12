@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASCII Portrait</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+canvas#main { display: block; }
+canvas#img { display: none; }
+</style>
+</head>
+<body>
+
+<canvas id="main"></canvas>
+<canvas id="img"></canvas>
+
+<script type="module">
+import { prepareWithSegments, layoutWithLines } from 'https://esm.sh/@chenglou/pretext'
+
+// ── Config ──────────────────────────────────────────────
+const FONT_SIZE = 9
+const FONT = `${FONT_SIZE}px "Courier New"`
+const LINE_HEIGHT = FONT_SIZE + 2
+const MAX_PARTICLES = 4000
+const MOUSE_RADIUS = 60
+const MOUSE_R2 = MOUSE_RADIUS * MOUSE_RADIUS
+const GRAVITY = 0.4
+const RECOVER_DELAY = 3000
+const ATLAS_PAD = 2
+const KEYWORDS = [
+  'PRODUCT DESIGNER', 'GRAB', 'OKX', 'SINGHEALTH', 'ION ORCHARD',
+  'RIDE-HAILING', 'SOUTHEAST ASIA', 'DESIGN SYSTEM', 'UX RESEARCH',
+  'MULTI-SELECT', 'MARKETPLACE', 'FULFILLMENT', 'STRATEGY', 'MVP',
+  'CONSUMER', 'SCALE', 'INTENT-BASED', 'TRUST', 'TRANSPARENCY',
+  'THE MEATMEN', 'KIAT YINGDA', 'SINGAPORE', '$4B VOLUME', '+239% USERS',
+  '+$1M REVENUE', 'PHASED ROLLOUT', 'USER RESEARCH', 'CONTENT DESIGN',
+  'COMPETITIVE ANALYSIS', 'PRODUCT-MARKET FIT',
+]
+const KW_STREAM = (() => {
+  let s = ''
+  for (let i = 0; s.length < 5000; i++) s += KEYWORDS[i % KEYWORDS.length] + ' · '
+  return s
+})()
+
+// ── Pre-computed alpha LUT (replaces COLOR_LUT strings) ─
+const ALPHA_LUT = new Float32Array(256)
+for (let i = 0; i < 256; i++) {
+  const t = i / 255
+  const curved = Math.pow(t, 0.6)
+  ALPHA_LUT[i] = 0.2 + curved * 0.8
+}
+
+// ── State (SoA for cache-friendly access) ───────────────
+const canvas = document.getElementById('main')
+const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true })
+const imgCanvas = document.getElementById('img')
+const imgCtx = imgCanvas.getContext('2d')
+
+let N = 0
+let px, py, ox, oy, vx, vy, rot, rotV, dark, falling, fallTime
+let chars = []
+
+// Character atlas: pre-rendered offscreen canvases per char
+let atlas = {} // char -> { canvas, w, h }
+
+let mouseX = -9999, mouseY = -9999
+let charW = FONT_SIZE * 0.6
+let dpr = 1, W = 0, H = 0
+let animating = false
+
+function measureCharWidth() {
+  const widths = []
+  for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    const p = prepareWithSegments(ch.repeat(20), FONT)
+    const { lines } = layoutWithLines(p, 100000, LINE_HEIGHT)
+    if (lines.length > 0 && lines[0].width > 0) widths.push(lines[0].width / 20)
+  }
+  if (widths.length > 0) charW = Math.ceil(Math.max(...widths) * 100) / 100
+}
+
+function setupCanvas() {
+  dpr = window.devicePixelRatio || 1
+  W = window.innerWidth
+  H = window.innerHeight
+  canvas.width = W * dpr
+  canvas.height = H * dpr
+  canvas.style.width = W + 'px'
+  canvas.style.height = H + 'px'
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+}
+
+// ── Allocate SoA arrays ─────────────────────────────────
+function allocate(n) {
+  N = n
+  px = new Float32Array(n)
+  py = new Float32Array(n)
+  ox = new Float32Array(n)
+  oy = new Float32Array(n)
+  vx = new Float32Array(n)
+  vy = new Float32Array(n)
+  rot = new Float32Array(n)
+  rotV = new Float32Array(n)
+  dark = new Uint8Array(n)
+  falling = new Uint8Array(n)
+  fallTime = new Float64Array(n)
+  chars = new Array(n)
+}
+
+// ── Build character atlas ───────────────────────────────
+// Pre-renders each unique char to an offscreen canvas.
+// drawImage from a cached bitmap is 10-50x faster than fillText.
+function buildAtlas() {
+  atlas = {}
+  const seen = new Set(chars)
+  for (const ch of seen) {
+    const c = document.createElement('canvas')
+    const lw = Math.ceil(charW) + ATLAS_PAD * 2
+    const lh = FONT_SIZE + ATLAS_PAD * 2
+    c.width = lw * dpr
+    c.height = lh * dpr
+    const cx = c.getContext('2d')
+    cx.scale(dpr, dpr)
+    cx.font = FONT
+    cx.textBaseline = 'top'
+    cx.fillStyle = '#000'
+    cx.fillText(ch, ATLAS_PAD, ATLAS_PAD)
+    atlas[ch] = { canvas: c, w: lw, h: lh }
+  }
+}
+
+// ── Process image ───────────────────────────────────────
+function processImage(img) {
+  setupCanvas()
+  measureCharWidth()
+
+  const cols = Math.floor(W / charW)
+  const rows = Math.floor(H / LINE_HEIGHT)
+
+  const imgAspect = img.width / img.height
+  const canvasAspect = W / H
+  let drawW, drawH
+  if (imgAspect > canvasAspect) { drawH = H; drawW = drawH * imgAspect }
+  else { drawW = W; drawH = drawW / imgAspect }
+  const offX = (W - drawW) / 2
+  const offY = (H - drawH) / 2
+
+  imgCanvas.width = Math.ceil(drawW)
+  imgCanvas.height = Math.ceil(drawH)
+  imgCtx.drawImage(img, 0, 0, drawW, drawH)
+  const imgData = imgCtx.getImageData(0, 0, imgCanvas.width, imgCanvas.height)
+  const d = imgData.data
+
+  const cx = drawW / 2, cy = drawH * 0.46
+  const rxI = 1 / (drawW * 0.48), ryI = 1 / (drawH * 0.56)
+
+  // First pass: auto-contrast
+  const brVals = []
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const sx = (col * charW - offX) | 0
+      const sy = (row * LINE_HEIGHT - offY) | 0
+      if (sx < 0 || sx >= imgCanvas.width || sy < 0 || sy >= imgCanvas.height) continue
+      const ex = (sx - cx) * rxI, ey = (sy - cy) * ryI
+      if (ex * ex + ey * ey > 1) continue
+      const idx = (sy * imgCanvas.width + sx) << 2
+      const br = (0.299 * d[idx] + 0.587 * d[idx+1] + 0.114 * d[idx+2]) / 255
+      if (br > 0.03) brVals.push(br)
+    }
+  }
+  brVals.sort((a, b) => a - b)
+  const lo = brVals[(brVals.length * 0.05) | 0] || 0.05
+  const hi = brVals[(brVals.length * 0.95) | 0] || 0.5
+  const rangeI = 1 / Math.max(0.1, hi - lo)
+
+  // Second pass: create particles
+  const tempPx = [], tempPy = [], tempDark = [], tempChars = []
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const sx = (col * charW - offX) | 0
+      const sy = (row * LINE_HEIGHT - offY) | 0
+      if (sx < 0 || sx >= imgCanvas.width || sy < 0 || sy >= imgCanvas.height) continue
+      const ex = (sx - cx) * rxI, ey = (sy - cy) * ryI
+      const ed = ex * ex + ey * ey
+      if (ed > 1) continue
+      const fade = ed > 0.6 ? 1 - (ed - 0.6) * 2.5 : 1
+
+      const idx = (sy * imgCanvas.width + sx) << 2
+      const br = Math.max(0, Math.min(1, ((0.299 * d[idx] + 0.587 * d[idx+1] + 0.114 * d[idx+2]) / 255 - lo) * rangeI))
+      if (br < 0.06) continue
+
+      const si = (row * cols + col) % KW_STREAM.length
+      const ch = KW_STREAM[si]
+      if (ch === ' ') continue
+
+      tempPx.push(col * charW)
+      tempPy.push(row * LINE_HEIGHT)
+      tempDark.push((br * fade * 255) | 0)
+      tempChars.push(ch)
+    }
+  }
+
+  // Cap — keep darkest particles
+  let indices = tempPx.map((_, i) => i)
+  if (indices.length > MAX_PARTICLES) {
+    indices.sort((a, b) => tempDark[b] - tempDark[a])
+    indices.length = MAX_PARTICLES
+  }
+  // Re-sort by dark ascending for alpha batching (minimizes globalAlpha changes)
+  indices.sort((a, b) => tempDark[a] - tempDark[b])
+
+  allocate(indices.length)
+  for (let j = 0; j < indices.length; j++) {
+    const i = indices[j]
+    ox[j] = tempPx[i]
+    oy[j] = tempPy[i]
+    px[j] = ox[j] + (Math.random() - 0.5) * W * 0.5
+    py[j] = oy[j] + (Math.random() - 0.5) * H * 0.5
+    dark[j] = tempDark[i]
+    chars[j] = tempChars[i]
+  }
+
+  buildAtlas()
+  if (!animating) { animating = true; animate() }
+}
+
+// ── Render ──────────────────────────────────────────────
+let lastFrame = 0
+function animate(timestamp) {
+  if (timestamp - lastFrame < 32) { requestAnimationFrame(animate); return }
+  lastFrame = timestamp
+
+  // Opaque canvas: fill white instead of clearRect
+  ctx.globalAlpha = 1
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, W, H)
+
+  const now = performance.now()
+  const mx = mouseX, my = mouseY
+  let lastA = -1
+
+  for (let i = 0; i < N; i++) {
+    let x = px[i], y = py[i]
+    let _vx = vx[i], _vy = vy[i]
+
+    // ── Physics ──
+    if (falling[i]) {
+      const elapsed = now - fallTime[i]
+
+      if (elapsed < RECOVER_DELAY) {
+        _vy += GRAVITY
+        if (y > H + 50) {
+          y = -50 - Math.random() * H * 0.3
+          x = ox[i] + (Math.random() - 0.5) * 80
+          _vy = Math.random() * 2
+          _vx = 0
+          rotV[i] *= 0.3
+          fallTime[i] = now - RECOVER_DELAY
+        }
+      } else {
+        const t = Math.min(1, (elapsed - RECOVER_DELAY) / 1500)
+        const s = t * 0.1
+        _vx += (ox[i] - x) * s
+        _vy += (oy[i] - y) * s
+        _vx *= 0.9
+        _vy *= 0.9
+        const dx2 = x - ox[i], dy2 = y - oy[i]
+        if (dx2 * dx2 + dy2 * dy2 < 0.25 && _vx * _vx + _vy * _vy < 0.01) {
+          x = ox[i]; y = oy[i]; _vx = 0; _vy = 0
+          falling[i] = 0
+          rot[i] = 0; rotV[i] = 0
+        }
+      }
+    } else {
+      _vx += (ox[i] - x) * 0.1
+      _vy += (oy[i] - y) * 0.1
+      _vx *= 0.85
+      _vy *= 0.85
+
+      const dx = x - mx, dy = y - my
+      const d2 = dx * dx + dy * dy
+      if (d2 < MOUSE_R2 && d2 > 0) {
+        falling[i] = 1
+        fallTime[i] = now
+        _vx += (Math.random() - 0.5) * 3
+        _vy += Math.random() * 2
+        rotV[i] = (dx > 0 ? 1 : -1) * (Math.random() * 0.3 + 0.1)
+      }
+    }
+
+    _vx *= 0.97; _vy *= 0.97
+    x += _vx; y += _vy
+    px[i] = x; py[i] = y; vx[i] = _vx; vy[i] = _vy
+
+    rot[i] += rotV[i]
+    if (!falling[i]) {
+      rotV[i] += -rot[i] * 0.08
+      rotV[i] *= 0.85
+    }
+
+    // ── Draw ──
+    if (y < -50 || y > H + 50 || x < -50 || x > W + 50) continue
+
+    // Set globalAlpha — sorted by dark[] so changes are minimized
+    const a = ALPHA_LUT[dark[i]]
+    if (a !== lastA) { ctx.globalAlpha = a; lastA = a }
+
+    const at = atlas[chars[i]]
+    if (!at) continue
+
+    const r = rot[i]
+    if (r > 0.005 || r < -0.005) {
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.rotate(r)
+      ctx.drawImage(at.canvas, 0, 0, at.canvas.width, at.canvas.height,
+                    -ATLAS_PAD, -ATLAS_PAD, at.w, at.h)
+      ctx.restore()
+    } else {
+      ctx.drawImage(at.canvas, 0, 0, at.canvas.width, at.canvas.height,
+                    x - ATLAS_PAD, y - ATLAS_PAD, at.w, at.h)
+    }
+  }
+
+  ctx.globalAlpha = 1
+  requestAnimationFrame(animate)
+}
+
+// ── Events ──────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY })
+canvas.addEventListener('mouseleave', () => { mouseX = -9999; mouseY = -9999 })
+
+canvas.addEventListener('click', e => {
+  const cx = e.clientX, cy = e.clientY, now = performance.now()
+  for (let i = 0; i < N; i++) {
+    falling[i] = 1; fallTime[i] = now
+    const dx = px[i] - cx, dy = py[i] - cy
+    const d = Math.max(1, Math.sqrt(dx * dx + dy * dy))
+    const f = Math.min(25, 800 / d)
+    vx[i] += (dx / d) * f + (Math.random() - 0.5) * 5
+    vy[i] += (dy / d) * f * 0.6 - Math.random() * 3
+    rotV[i] = (dx > 0 ? 1 : -1) * (Math.random() * 0.4 + 0.05)
+  }
+})
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault(); mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY
+}, { passive: false })
+canvas.addEventListener('touchstart', e => {
+  mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY
+  const now = performance.now()
+  for (let i = 0; i < N; i++) {
+    falling[i] = 1; fallTime[i] = now
+    const dx = px[i] - mouseX, dy = py[i] - mouseY
+    const d = Math.max(1, Math.sqrt(dx * dx + dy * dy))
+    const f = Math.min(25, 800 / d)
+    vx[i] += (dx / d) * f + (Math.random() - 0.5) * 5
+    vy[i] += (dy / d) * f * 0.6 - Math.random() * 3
+  }
+})
+canvas.addEventListener('touchend', () => { mouseX = -9999; mouseY = -9999 })
+
+window.addEventListener('resize', () => {
+  if (N > 0) {
+    const t = new Image(); t.src = imgCanvas.toDataURL(); t.onload = () => processImage(t)
+  } else setupCanvas()
+})
+
+// ── Init ────────────────────────────────────────────────
+setupCanvas()
+const img = new Image()
+img.onload = () => processImage(img)
+img.src = 'me.jpeg'
+</script>
+</body>
+</html>

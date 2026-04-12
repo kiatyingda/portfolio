@@ -12,9 +12,11 @@ export default function Work() {
         return (
           <div
             key={project.slug}
-            className="min-h-screen flex items-center bg-th-bg border-t border-th-bsub"
-            style={{ scrollSnapAlign: 'start' }}
+            className="min-h-screen flex items-center bg-th-bg border-t border-th-border relative"
           >
+            {/* Decorative dot */}
+            <div className="absolute top-8 right-8 text-[6px] text-th-text hidden md:block" style={{ opacity: 0.2 }}>■</div>
+
             <div className="max-w-[1136px] mx-auto w-full px-8 md:px-12 py-16">
               <FadeIn>
                 <div className={`grid grid-cols-1 gap-8 md:gap-12 items-center ${
@@ -24,39 +26,39 @@ export default function Work() {
                 }`}>
                   {/* Text */}
                   <div className={isReversed ? 'md:order-2' : ''}>
-                    <span className="font-mono text-[12px] text-th-text3 mb-6 block">
-                      {String(i + 1).padStart(2, '0')} — {project.category}
+                    {/* Bold category label — weight contrast */}
+                    <span className="font-display text-[11px] font-bold text-th-text tracking-[0.12em] mb-6 block">
+                      ■ {project.category}
                     </span>
                     <Link href={`/work/${project.slug}`}>
                       <h2
-                        className="font-display font-bold text-[36px] md:text-[52px] text-th-text leading-[1.12] mb-4"
-                        style={{ letterSpacing: '-0.02em' }}
+                        className="font-display font-extralight text-[34px] md:text-[48px] text-th-text leading-[1.1] mb-4"
+                        style={{ letterSpacing: '0.02em' }}
                       >
                         {project.title}
                       </h2>
                     </Link>
-                    <p className="font-sans text-[14px] text-th-text3 mb-6">
+                    <p className="font-display text-[13px] font-light text-th-text3 tracking-[0.06em] mb-6">
                       {project.company} · {project.year}
                     </p>
-                    <p className="font-sans text-[16px] text-th-text2 leading-[1.5] mb-8 max-w-[420px]">
+                    <p className="font-display text-[14px] font-light text-th-text2 leading-[1.6] tracking-[0.03em] mb-8 max-w-[420px]">
                       {project.summary}
                     </p>
                     <Link
                       href={`/work/${project.slug}`}
-                      className="inline-flex items-center px-5 py-2.5 rounded-pill bg-th-text text-th-bg font-sans text-[14px] font-medium hover:opacity-80 transition-opacity duration-200"
+                      className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] text-th-text hover:opacity-60 transition-opacity duration-200"
                     >
-                      View case study
+                      [▸] View case study
                     </Link>
                   </div>
 
                   {/* Cover image */}
-                  <Link href={`/work/${project.slug}`} className={`block group ${isReversed ? 'md:order-1' : ''}`}>
-                    <div className="overflow-hidden rounded-card-lg shadow-card">
+                  <Link href={`/work/${project.slug}`} className={`block ${isReversed ? 'md:order-1' : ''}`}>
+                    <div className="overflow-hidden border border-th-border">
                       <ImagePlaceholder
                         aspect="4/3"
                         device="mobile"
                         src={project.coverImage}
-                        className="group-hover:scale-[1.02] transition-transform duration-500 ease-out"
                       />
                     </div>
                   </Link>

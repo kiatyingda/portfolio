@@ -49,10 +49,10 @@ function PhoneImage({ src, dim = false }: { src: string; dim?: boolean }) {
     >
       <defs>
         <clipPath id={clipId}>
-          <rect x="4" y="4" width="192" height="392" rx="27" />
+          <rect x="4" y="4" width="192" height="392" rx="0" />
         </clipPath>
       </defs>
-      <rect x="1" y="1" width="198" height="398" rx="30"
+      <rect x="1" y="1" width="198" height="398" rx="0"
         fill="var(--bg-3)" stroke="var(--border)" strokeWidth="1.5" />
       <image
         href={src} x="4" y="4" width="192" height="392"
@@ -60,7 +60,7 @@ function PhoneImage({ src, dim = false }: { src: string; dim?: boolean }) {
         preserveAspectRatio="xMidYMid slice"
         opacity={dim ? 0.5 : 1}
       />
-      <rect x="72" y="13" width="56" height="18" rx="9" fill="rgba(0,0,0,0.85)" />
+      <rect x="72" y="13" width="56" height="18" rx="0" fill="rgba(0,0,0,0.85)" />
       <rect x="80" y="384" width="40" height="4" rx="2" fill="var(--bg-4)" opacity="0.5" />
     </svg>
   )
@@ -81,14 +81,14 @@ function DesktopImage({ src }: { src: string }) {
           <rect x="1" y="42" width="718" height="406" />
         </clipPath>
       </defs>
-      <rect x="1" y="1" width="718" height="448" rx="12"
+      <rect x="1" y="1" width="718" height="448" rx="0"
         fill="var(--bg-3)" stroke="var(--border)" strokeWidth="1.5" />
-      <rect x="1" y="1" width="718" height="40" rx="12" fill="var(--bg-4)" opacity="0.65" />
+      <rect x="1" y="1" width="718" height="40" rx="0" fill="var(--bg-4)" opacity="0.65" />
       <rect x="1" y="30" width="718" height="12" fill="var(--bg-4)" opacity="0.65" />
       <circle cx="22" cy="20" r="6" fill="var(--bg-4)" opacity="0.7" />
       <circle cx="42" cy="20" r="6" fill="var(--bg-4)" opacity="0.7" />
       <circle cx="62" cy="20" r="6" fill="var(--bg-4)" opacity="0.7" />
-      <rect x="88" y="11" width="544" height="18" rx="9" fill="var(--bg-2)" opacity="0.7" />
+      <rect x="88" y="11" width="544" height="18" rx="0" fill="var(--bg-2)" opacity="0.7" />
       <image
         href={src} x="1" y="42" width="718" height="406"
         clipPath={`url(#${clipId})`}
@@ -107,9 +107,9 @@ function PhoneSketch({ dim = false }: { dim?: boolean }) {
       xmlns="http://www.w3.org/2000/svg"
       style={{ width: '100%', height: '100%' }}
     >
-      <rect x="1" y="1" width="198" height="398" rx="30"
+      <rect x="1" y="1" width="198" height="398" rx="0"
         fill="var(--bg-3)" stroke="var(--border)" strokeWidth="1.5" />
-      <rect x="72" y="13" width="56" height="18" rx="9" fill="var(--bg-2)" />
+      <rect x="72" y="13" width="56" height="18" rx="0" fill="var(--bg-2)" />
       <rect x="16" y="17" width="28" height="8" rx="4" fill="var(--bg-4)" opacity="0.55" />
       <rect x="158" y="17" width="8" height="8" rx="2" fill="var(--bg-4)" opacity="0.5" />
       <rect x="170" y="17" width="14" height="8" rx="4" fill="var(--bg-4)" opacity="0.5" />
@@ -151,14 +151,14 @@ function DesktopSketch() {
       xmlns="http://www.w3.org/2000/svg"
       style={{ width: '100%', height: '100%' }}
     >
-      <rect x="1" y="1" width="718" height="448" rx="12"
+      <rect x="1" y="1" width="718" height="448" rx="0"
         fill="var(--bg-3)" stroke="var(--border)" strokeWidth="1.5" />
-      <rect x="1" y="1" width="718" height="40" rx="12" fill="var(--bg-4)" opacity="0.65" />
+      <rect x="1" y="1" width="718" height="40" rx="0" fill="var(--bg-4)" opacity="0.65" />
       <rect x="1" y="30" width="718" height="12" fill="var(--bg-4)" opacity="0.65" />
       <circle cx="22" cy="20" r="6" fill="var(--bg-4)" opacity="0.7" />
       <circle cx="42" cy="20" r="6" fill="var(--bg-4)" opacity="0.7" />
       <circle cx="62" cy="20" r="6" fill="var(--bg-4)" opacity="0.7" />
-      <rect x="88" y="11" width="544" height="18" rx="9" fill="var(--bg-2)" opacity="0.7" />
+      <rect x="88" y="11" width="544" height="18" rx="0" fill="var(--bg-2)" opacity="0.7" />
       <rect x="102" y="16" width="160" height="8" rx="4" fill="var(--bg-4)" opacity="0.5" />
       <rect x="1" y="42" width="190" height="406" fill="var(--bg-4)" opacity="0.1" />
       <rect x="16" y="58" width="96" height="9" rx="4.5" fill="var(--bg-4)" opacity="0.55" />
@@ -199,7 +199,7 @@ export function MiniPhoneSketch() {
   return (
     <svg viewBox="0 0 80 160" fill="none" xmlns="http://www.w3.org/2000/svg"
       style={{ width: 48, height: 96 }}>
-      <rect x="0.75" y="0.75" width="78.5" height="158.5" rx="12" fill="var(--bg-3)" stroke="var(--border)" strokeWidth="1" />
+      <rect x="0.75" y="0.75" width="78.5" height="158.5" rx="0" fill="var(--bg-3)" stroke="var(--border)" strokeWidth="1" />
       <rect x="28" y="5" width="24" height="8" rx="4" fill="var(--bg-2)" />
       <rect x="2" y="16" width="76" height="18" fill="var(--bg-4)" opacity="0.35" />
       <rect x="26" y="20" width="28" height="6" rx="3" fill="var(--bg-4)" />
@@ -233,11 +233,9 @@ export default function ImagePlaceholder({
   return (
     <div className={className}>
       <div
-        className={`${aspectMap[aspect]} w-full relative overflow-hidden rounded-[4px]`}
+        className={`${aspectMap[aspect]} w-full relative overflow-hidden`}
         style={{ background: 'var(--bg-2)' }}
       >
-        <div className="absolute inset-0 pointer-events-none z-10"
-          style={{ background: 'radial-gradient(ellipse 90% 90% at 50% 50%, transparent 45%, rgba(0,0,0,0.18) 100%)' }} />
 
         {device === 'none' && (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -261,7 +259,7 @@ export default function ImagePlaceholder({
 
         {device === 'mobile' && (
           <div className="absolute inset-0 flex items-center justify-center py-5">
-            <div style={{ height: '100%', aspectRatio: '200/400', filter: 'drop-shadow(0 12px 40px rgba(0,0,0,0.45))' }}>
+            <div style={{ height: '100%', aspectRatio: '200/400' }}>
               {srcOk ? <PhoneImage src={src!} /> : <PhoneSketch />}
             </div>
           </div>
@@ -269,10 +267,10 @@ export default function ImagePlaceholder({
 
         {device === 'split' && (
           <div className="absolute inset-0 flex items-center justify-center gap-3 px-10 py-5">
-            <div style={{ height: '94%', aspectRatio: '200/400', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.3))' }}>
+            <div style={{ height: '94%', aspectRatio: '200/400' }}>
               {srcOk ? <PhoneImage src={src!} dim /> : <PhoneSketch dim />}
             </div>
-            <div style={{ height: '94%', aspectRatio: '200/400', filter: 'drop-shadow(0 12px 40px rgba(0,0,0,0.45))' }}>
+            <div style={{ height: '94%', aspectRatio: '200/400' }}>
               {afterOk ? <PhoneImage src={srcAfter!} /> : (srcOk && !srcAfter ? <PhoneImage src={src!} /> : <PhoneSketch />)}
             </div>
           </div>
@@ -280,7 +278,7 @@ export default function ImagePlaceholder({
 
         {device === 'desktop' && (
           <div className="absolute inset-0 flex items-center justify-center p-8">
-            <div style={{ width: '88%', aspectRatio: '720/450', filter: 'drop-shadow(0 16px 48px rgba(0,0,0,0.4))' }}>
+            <div style={{ width: '88%', aspectRatio: '720/450' }}>
               {srcOk ? <DesktopImage src={src!} /> : <DesktopSketch />}
             </div>
           </div>
@@ -289,7 +287,7 @@ export default function ImagePlaceholder({
         {pending.length > 0 && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2">
             {pending.map(name => (
-              <span key={name} className="font-mono text-[10px] tracking-wider px-2.5 py-1 rounded bg-black/50 text-white/30 backdrop-blur-sm whitespace-nowrap">
+              <span key={name} className="font-mono text-[10px] tracking-wider px-2.5 py-1 bg-black/50 text-white/30 whitespace-nowrap">
                 {name}
               </span>
             ))}

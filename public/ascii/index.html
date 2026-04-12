@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pretext Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400&family=Noto+Sans+Arabic:wght@400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0c0c10;
+  --surface: #14141a;
+  --surface2: #1a1a22;
+  --border: rgba(255,255,255,0.07);
+  --text: #d4d4d8;
+  --text-dim: rgba(255,255,255,0.4);
+  --text-xdim: rgba(255,255,255,0.2);
+  --accent: #6d8aff;
+  --accent-dim: rgba(109,138,255,0.15);
+  --warm: #e8a44a;
+  --warm-dim: rgba(232,164,74,0.12);
+}
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; }
+
+/* Layout */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.header h1 { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: var(--text-dim); }
+.header .tag { font-size: 10px; background: var(--accent-dim); color: var(--accent); padding: 2px 7px; border-radius: 4px; margin-left: 8px; font-weight: 500; }
+.main { display: flex; flex: 1; min-height: 0; }
+.left { width: 360px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+.right { flex: 1; position: relative; overflow: hidden; }
+
+/* Left pane */
+.editor-area { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.editor-area textarea {
+  flex: 1; resize: none; border: none; outline: none;
+  background: var(--surface); color: var(--text); padding: 16px;
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6;
+}
+.controls { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+.control-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.control-row:last-child { margin-bottom: 0; }
+.control-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; width: 70px; flex-shrink: 0; }
+.control-row select, .control-row input[type=range] { flex: 1; }
+select {
+  background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 8px; font-size: 12px; font-family: inherit; outline: none;
+}
+select:focus { border-color: var(--accent); }
+input[type=range] { -webkit-appearance: none; height: 4px; background: var(--surface2); border-radius: 2px; outline: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+.range-val { font-size: 11px; color: var(--text-dim); min-width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
+.presets { display: flex; gap: 4px; flex-wrap: wrap; }
+.presets button {
+  background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border);
+  border-radius: 4px; padding: 3px 8px; font-size: 10px; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+}
+.presets button:hover { background: var(--accent-dim); color: var(--accent); border-color: rgba(109,138,255,0.3); }
+.wrap-toggles { display: flex; gap: 2px; }
+.wrap-toggles button {
+  background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border);
+  border-radius: 4px; padding: 3px 8px; font-size: 10px; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+}
+.wrap-toggles button.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(109,138,255,0.3); }
+
+/* Right pane */
+canvas { display: block; }
+.width-handle {
+  position: absolute; top: 0; width: 6px; height: 100%;
+  cursor: col-resize; z-index: 10;
+}
+.width-handle::after {
+  content: ''; position: absolute; top: 50%; left: 1px; transform: translateY(-50%);
+  width: 3px; height: 40px; border-radius: 2px; background: var(--accent); opacity: 0.4;
+  transition: opacity 0.15s;
+}
+.width-handle:hover::after, .width-handle.dragging::after { opacity: 0.9; }
+
+/* Tooltip */
+.tooltip {
+  position: absolute; pointer-events: none; background: #1e1e28; color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+  font-size: 11px; line-height: 1.5; z-index: 20; display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  font-variant-numeric: tabular-nums;
+}
+.tooltip .tt-label { color: var(--text-dim); }
+.tooltip .tt-val { color: var(--accent); font-weight: 500; }
+
+/* HUD */
+.hud {
+  display: flex; align-items: center; gap: 20px; padding: 8px 16px;
+  border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0;
+  font-size: 11px; font-variant-numeric: tabular-nums;
+}
+.hud-item .hud-label { color: var(--text-xdim); text-transform: uppercase; letter-spacing: 0.6px; font-size: 9px; }
+.hud-item .hud-val { color: var(--text-dim); margin-top: 1px; }
+.hud-item .hud-val b { color: var(--warm); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div style="display:flex;align-items:center;">
+      <h1>PRETEXT PLAYGROUND</h1>
+      <span class="tag">v1</span>
+    </div>
+    <span style="font-size:10px;color:var(--text-xdim)">Pure JS text measurement &mdash; no DOM reflow</span>
+  </div>
+  <div class="main">
+    <div class="left">
+      <div class="editor-area">
+        <textarea id="input" spellcheck="false">The cosmos is within us. We are made of star-stuff. We are a way for the universe to know itself.
+
+The nitrogen in our DNA, the calcium in our teeth, the iron in our blood, the carbon in our apple pies were made in the interiors of collapsing stars. If you wish to make an apple pie from scratch, you must first invent the universe.
+
+For small creatures such as we, the vastness is bearable only through love. Every one of us is, in the cosmic perspective, precious. Somewhere, something incredible is waiting to be known.</textarea>
+      </div>
+      <div class="controls">
+        <div class="control-row">
+          <span class="control-label">Font</span>
+          <select id="fontSelect">
+            <option value="Inter">Inter</option>
+            <option value="Noto Sans SC">Noto Sans SC</option>
+            <option value="Noto Sans Arabic">Noto Sans Arabic</option>
+            <option value="JetBrains Mono">JetBrains Mono</option>
+          </select>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Size</span>
+          <input type="range" id="fontSize" min="10" max="48" value="15">
+          <span class="range-val" id="fontSizeVal">15px</span>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Leading</span>
+          <input type="range" id="lineHeight" min="10" max="30" value="22" step="1">
+          <span class="range-val" id="lineHeightVal">22px</span>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Wrap</span>
+          <div class="wrap-toggles" id="wrapToggles">
+            <button class="active" data-mode="normal">normal</button>
+            <button data-mode="pre-wrap">pre-wrap</button>
+            <button data-mode="keep-all">keep-all</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Presets</span>
+          <div class="presets" id="presets"></div>
+        </div>
+      </div>
+    </div>
+    <div class="right" id="rightPane">
+      <canvas id="canvas"></canvas>
+      <div class="width-handle" id="widthHandle"></div>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+  </div>
+  <div class="hud" id="hud"></div>
+</div>
+
+<script type="module">
+import { prepare, layout, prepareWithSegments, layoutWithLines } from 'https://esm.sh/@chenglou/pretext'
+
+// --- Preset texts ---
+const PRESETS = {
+  'English': `The cosmos is within us. We are made of star-stuff. We are a way for the universe to know itself.\n\nThe nitrogen in our DNA, the calcium in our teeth, the iron in our blood, the carbon in our apple pies were made in the interiors of collapsing stars. If you wish to make an apple pie from scratch, you must first invent the universe.\n\nFor small creatures such as we, the vastness is bearable only through love. Every one of us is, in the cosmic perspective, precious. Somewhere, something incredible is waiting to be known.`,
+  'Chinese': `宇宙存在于我们之中。我们由星尘构成，是宇宙认识自身的方式。\n\n我们DNA中的氮、牙齿中的钙、血液中的铁、苹果派中的碳，都是在坍缩恒星的内部形成的。如果你想从头开始做一个苹果派，你必须首先发明宇宙。\n\n对于像我们这样渺小的生物来说，只有通过爱，才能承受这浩瀚的宇宙。在宇宙的视角下，我们每一个人都是珍贵的。`,
+  'Arabic': `الكون بداخلنا. نحن مصنوعون من مادة النجوم. نحن طريقة الكون لمعرفة نفسه.\n\nالنيتروجين في حمضنا النووي، والكالسيوم في أسناننا، والحديد في دمائنا، والكربون في فطائر التفاح لدينا، كلها صنعت في باطن النجوم المنهارة.\n\nبالنسبة للمخلوقات الصغيرة مثلنا، لا يمكن تحمل الاتساع إلا من خلال الحب.`,
+  'Mixed': `AGI 春天到了。بدأت الرحلة begins now.\n\nThe year is 2026. 人工智能正在改变世界。التكنولوجيا تتطور بسرعة. Every language, every script, flowing together in harmony.\n\nPretext handles them all: English words, 中文字符, الحروف العربية, and even emoji 🚀🌍✨ — with pixel-perfect line breaking.`,
+  'Emoji': `Welcome to the emoji zone 🎉🎊🥳\n\n🚀 Rockets launching into space 🌌✨ Stars twinkling in the night sky 🌙\n\n👨‍👩‍👧‍👦 Family of four 🏠 going home 🚗💨\n\n🇺🇸🇯🇵🇫🇷🇧🇷🇮🇳 Flags from around the world 🌍🌎🌏\n\nMath: 1️⃣ + 2️⃣ = 3️⃣ 🧮\n\n❤️🧡💛💚💙💜🖤🤍🤎 All the hearts!`
+}
+
+// --- State ---
+const inputEl = document.getElementById('input')
+const fontSelectEl = document.getElementById('fontSelect')
+const fontSizeEl = document.getElementById('fontSize')
+const fontSizeValEl = document.getElementById('fontSizeVal')
+const lineHeightEl = document.getElementById('lineHeight')
+const lineHeightValEl = document.getElementById('lineHeightVal')
+const wrapTogglesEl = document.getElementById('wrapToggles')
+const presetsEl = document.getElementById('presets')
+const canvasEl = document.getElementById('canvas')
+const rightPane = document.getElementById('rightPane')
+const widthHandle = document.getElementById('widthHandle')
+const tooltipEl = document.getElementById('tooltip')
+const hudEl = document.getElementById('hud')
+const ctx = canvasEl.getContext('2d')
+
+let state = {
+  fontFamily: 'Inter',
+  fontSize: 15,
+  lineHeight: 22,
+  whiteSpace: 'normal',
+  wordBreak: 'normal',
+  textWidth: 460,
+  hoveredLine: -1,
+}
+let lines = []
+let preparedSeg = null
+let lastText = ''
+let lastFont = ''
+let lastOptions = ''
+let prepareTime = 0
+let layoutTime = 0
+
+// --- Preset buttons ---
+for (const [name] of Object.entries(PRESETS)) {
+  const btn = document.createElement('button')
+  btn.textContent = name
+  btn.onclick = () => { inputEl.value = PRESETS[name]; update() }
+  presetsEl.appendChild(btn)
+}
+
+// --- Controls ---
+fontSelectEl.onchange = () => { state.fontFamily = fontSelectEl.value; invalidatePrepare(); update() }
+fontSizeEl.oninput = () => { state.fontSize = +fontSizeEl.value; fontSizeValEl.textContent = state.fontSize + 'px'; invalidatePrepare(); update() }
+lineHeightEl.oninput = () => { state.lineHeight = +lineHeightEl.value; lineHeightValEl.textContent = state.lineHeight + 'px'; update() }
+inputEl.oninput = () => { invalidatePrepare(); update() }
+
+wrapTogglesEl.onclick = (e) => {
+  const btn = e.target.closest('button')
+  if (!btn) return
+  wrapTogglesEl.querySelectorAll('button').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  const mode = btn.dataset.mode
+  if (mode === 'pre-wrap') { state.whiteSpace = 'pre-wrap'; state.wordBreak = 'normal' }
+  else if (mode === 'keep-all') { state.whiteSpace = 'normal'; state.wordBreak = 'keep-all' }
+  else { state.whiteSpace = 'normal'; state.wordBreak = 'normal' }
+  invalidatePrepare()
+  update()
+}
+
+function invalidatePrepare() { lastText = ''; lastFont = ''; lastOptions = '' }
+
+// --- Width handle drag ---
+let handleDragging = false
+widthHandle.onpointerdown = (e) => {
+  handleDragging = true
+  widthHandle.classList.add('dragging')
+  widthHandle.setPointerCapture(e.pointerId)
+}
+window.onpointermove = (e) => {
+  if (!handleDragging) return
+  const rect = rightPane.getBoundingClientRect()
+  state.textWidth = Math.max(120, Math.min(rect.width - 40, e.clientX - rect.left))
+  update()
+}
+window.onpointerup = () => {
+  handleDragging = false
+  widthHandle.classList.remove('dragging')
+}
+
+// --- Canvas hover ---
+canvasEl.onmousemove = (e) => {
+  const rect = canvasEl.getBoundingClientRect()
+  const dpr = window.devicePixelRatio || 1
+  const mx = (e.clientX - rect.left)
+  const my = (e.clientY - rect.top)
+  const PAD = 24
+
+  let hovered = -1
+  for (let i = 0; i < lines.length; i++) {
+    const ly = PAD + i * state.lineHeight
+    if (my >= ly && my < ly + state.lineHeight) { hovered = i; break }
+  }
+  if (hovered !== state.hoveredLine) {
+    state.hoveredLine = hovered
+    draw()
+  }
+  // Tooltip
+  if (hovered >= 0 && hovered < lines.length) {
+    const line = lines[hovered]
+    tooltipEl.style.display = 'block'
+    tooltipEl.innerHTML =
+      `<span class="tt-label">Line</span> <span class="tt-val">${hovered}</span><br>` +
+      `<span class="tt-label">Width</span> <span class="tt-val">${line.width.toFixed(1)}px</span><br>` +
+      `<span class="tt-label">Chars</span> <span class="tt-val">${line.text.length}</span><br>` +
+      `<span class="tt-label">Cursor</span> <span class="tt-val">${line.start.segmentIndex}:${line.start.graphemeIndex} → ${line.end.segmentIndex}:${line.end.graphemeIndex}</span>`
+    let tx = e.clientX - rightPane.getBoundingClientRect().left + 12
+    let ty = e.clientY - rightPane.getBoundingClientRect().top - 10
+    if (tx + 200 > rightPane.clientWidth) tx = tx - 220
+    tooltipEl.style.left = tx + 'px'
+    tooltipEl.style.top = ty + 'px'
+  } else {
+    tooltipEl.style.display = 'none'
+  }
+}
+canvasEl.onmouseleave = () => {
+  state.hoveredLine = -1
+  tooltipEl.style.display = 'none'
+  draw()
+}
+
+// --- Core update ---
+function update() {
+  const text = inputEl.value
+  const font = `${state.fontSize}px "${state.fontFamily}"`
+  const opts = state.whiteSpace + '|' + state.wordBreak
+
+  // Prepare (only if text/font/options changed)
+  if (text !== lastText || font !== lastFont || opts !== lastOptions) {
+    const t0 = performance.now()
+    const options = {}
+    if (state.whiteSpace !== 'normal') options.whiteSpace = state.whiteSpace
+    if (state.wordBreak !== 'normal') options.wordBreak = state.wordBreak
+    preparedSeg = prepareWithSegments(text, font, options)
+    prepareTime = performance.now() - t0
+    lastText = text
+    lastFont = font
+    lastOptions = opts
+  }
+
+  // Layout
+  const t1 = performance.now()
+  const result = layoutWithLines(preparedSeg, state.textWidth, state.lineHeight)
+  layoutTime = performance.now() - t1
+  lines = result.lines
+
+  draw()
+  updateHUD(result)
+}
+
+// --- Draw ---
+function draw() {
+  const dpr = window.devicePixelRatio || 1
+  const cw = rightPane.clientWidth
+  const ch = rightPane.clientHeight
+  canvasEl.width = cw * dpr
+  canvasEl.height = ch * dpr
+  canvasEl.style.width = cw + 'px'
+  canvasEl.style.height = ch + 'px'
+  ctx.scale(dpr, dpr)
+
+  const PAD = 24
+  const maxBarWidth = 60
+
+  // Background
+  ctx.fillStyle = '#101016'
+  ctx.fillRect(0, 0, cw, ch)
+
+  // Container outline
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+  ctx.lineWidth = 1
+  ctx.setLineDash([4, 4])
+  ctx.strokeRect(PAD - 0.5, PAD - 0.5, state.textWidth + 1, lines.length * state.lineHeight + 1)
+  ctx.setLineDash([])
+
+  // Position width handle
+  widthHandle.style.left = (PAD + state.textWidth - 3) + 'px'
+
+  // Find max line width for bar scaling
+  let maxW = 0
+  for (const l of lines) if (l.width > maxW) maxW = l.width
+
+  // Draw lines
+  ctx.textBaseline = 'top'
+  const font = `${state.fontSize}px "${state.fontFamily}"`
+  ctx.font = font
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const y = PAD + i * state.lineHeight
+
+    // Alternating row tint
+    if (i % 2 === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.015)'
+      ctx.fillRect(PAD, y, state.textWidth, state.lineHeight)
+    }
+
+    // Hovered line highlight
+    if (i === state.hoveredLine) {
+      ctx.fillStyle = 'rgba(109,138,255,0.08)'
+      ctx.fillRect(PAD, y, state.textWidth, state.lineHeight)
+
+      // Width indicator line
+      ctx.strokeStyle = 'rgba(109,138,255,0.3)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(PAD + line.width, y)
+      ctx.lineTo(PAD + line.width, y + state.lineHeight)
+      ctx.stroke()
+    }
+
+    // Text
+    const textY = y + (state.lineHeight - state.fontSize) / 2
+    ctx.fillStyle = i === state.hoveredLine ? '#e8e8f0' : 'rgba(210,210,220,0.82)'
+    ctx.fillText(line.text, PAD, textY)
+
+    // Width bar (skyline)
+    const barX = PAD + state.textWidth + 12
+    const barW = maxW > 0 ? (line.width / maxW) * maxBarWidth : 0
+    const barH = Math.max(state.lineHeight - 4, 2)
+    const barY = y + (state.lineHeight - barH) / 2
+
+    if (i === state.hoveredLine) {
+      ctx.fillStyle = 'rgba(109,138,255,0.5)'
+    } else {
+      const t = lines.length > 1 ? i / (lines.length - 1) : 0
+      ctx.fillStyle = `rgba(109,138,255,${0.12 + t * 0.15})`
+    }
+    ctx.beginPath()
+    ctx.roundRect(barX, barY, barW, barH, 1.5)
+    ctx.fill()
+
+    // Width label on hover
+    if (i === state.hoveredLine) {
+      ctx.fillStyle = 'rgba(109,138,255,0.7)'
+      ctx.font = '10px Inter'
+      ctx.fillText(line.width.toFixed(0) + 'px', barX + barW + 6, y + (state.lineHeight - 10) / 2)
+      ctx.font = font
+    }
+  }
+
+  // Container width label
+  ctx.fillStyle = 'rgba(255,255,255,0.15)'
+  ctx.font = '10px Inter'
+  ctx.textBaseline = 'bottom'
+  ctx.fillText(state.textWidth + 'px', PAD, PAD - 6)
+  ctx.font = font
+  ctx.textBaseline = 'top'
+}
+
+// --- HUD ---
+function updateHUD(result) {
+  hudEl.innerHTML = `
+    <div class="hud-item"><div class="hud-label">Height</div><div class="hud-val"><b>${result.height}</b>px</div></div>
+    <div class="hud-item"><div class="hud-label">Lines</div><div class="hud-val"><b>${result.lineCount}</b></div></div>
+    <div class="hud-item"><div class="hud-label">Width</div><div class="hud-val"><b>${state.textWidth}</b>px</div></div>
+    <div class="hud-item"><div class="hud-label">prepare()</div><div class="hud-val"><b>${prepareTime.toFixed(2)}</b>ms</div></div>
+    <div class="hud-item"><div class="hud-label">layout()</div><div class="hud-val"><b>${layoutTime.toFixed(3)}</b>ms</div></div>
+    <div class="hud-item"><div class="hud-label">Font</div><div class="hud-val">${state.fontSize}px ${state.fontFamily}</div></div>
+  `
+}
+
+// --- Resize observer ---
+new ResizeObserver(() => { draw() }).observe(rightPane)
+
+// --- Init ---
+update()
+</script>
+</body>
+</html>

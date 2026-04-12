@@ -124,7 +124,7 @@ export default function BeforeAfter({
           transform: 'translate(-50%, -50%)',
         }}
       >
-        <div className="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center">
+        <div className="w-10 h-10 bg-white flex items-center justify-center">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M6 4L2 9L6 14" stroke="#0A0A0A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M12 4L16 9L12 14" stroke="#0A0A0A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -134,12 +134,12 @@ export default function BeforeAfter({
 
       {/* Labels */}
       <div className="absolute top-4 left-4 z-10">
-        <span className="font-sans text-[11px] font-medium tracking-wider uppercase px-3 py-1.5 rounded-full bg-black/50 text-white/70 backdrop-blur-sm">
+        <span className="font-mono text-[9px] tracking-[0.12em] uppercase px-3 py-1.5 bg-black/60 text-white/70">
           {beforeLabel}
         </span>
       </div>
       <div className="absolute top-4 right-4 z-10">
-        <span className="font-sans text-[11px] font-medium tracking-wider uppercase px-3 py-1.5 rounded-full bg-black/50 text-white/70 backdrop-blur-sm">
+        <span className="font-mono text-[9px] tracking-[0.12em] uppercase px-3 py-1.5 bg-black/60 text-white/70">
           {afterLabel}
         </span>
       </div>
@@ -149,14 +149,14 @@ export default function BeforeAfter({
   if (device === 'ipad') {
     return (
       <div className={`${className}`}>
-        <div className="mx-auto" style={{ maxWidth: 720, filter: 'drop-shadow(0 16px 48px rgba(0,0,0,0.4))' }}>
-          <div className="rounded-[20px] md:rounded-[28px] border border-th-border overflow-hidden" style={{ background: 'var(--bg-3)' }}>
+        <div className="mx-auto" style={{ maxWidth: 720 }}>
+          <div className="border border-th-border overflow-hidden" style={{ background: 'var(--bg-3)' }}>
             <div className="h-5 md:h-7 flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full" style={{ background: 'var(--bg-4)', opacity: 0.5 }} />
+              <div className="w-2 h-2" style={{ background: 'var(--bg-4)', opacity: 0.5 }} />
             </div>
             {content}
             <div className="h-5 md:h-7 flex items-center justify-center">
-              <div className="w-8 h-8 rounded-full border border-th-border" style={{ opacity: 0.3 }} />
+              <div className="w-8 h-8 border border-th-border" style={{ opacity: 0.3 }} />
             </div>
           </div>
         </div>
