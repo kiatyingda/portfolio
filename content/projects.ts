@@ -78,7 +78,7 @@ export const projects: Project[] = [
     caseStudy: {
       label: 'Case Study · 2021–2024',
       role: 'Lead Product Designer (sole designer)',
-      team: '3 PMs · 2 UX Researchers · 1 Content Designer · 1 Analyst · Cross-team: Fulfillment, Payments, Offers',
+      team: '1 PM · 1 Researcher · 1 Content Designer · 1 Analyst',
       duration: 'Aug 2021 – Jan 2024',
       impact: [
         { value: '+0.4pp', label: 'Fulfilment rate across SE Asia' },

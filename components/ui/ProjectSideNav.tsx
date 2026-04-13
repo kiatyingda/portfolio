@@ -1,6 +1,5 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 
 interface ProjectSideNavProps {
@@ -8,85 +7,47 @@ interface ProjectSideNavProps {
   next: { slug: string; title: string }
 }
 
-function shuffleString(str: string): string {
-  const arr = str.split('')
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
-  }
-  return arr.join('')
-}
-
-function SideLink({
+function NavLink({
   href,
   label,
-  side,
+  direction,
 }: {
   href: string
   label: string
-  side: 'left' | 'right'
+  direction: 'prev' | 'next'
 }) {
-  const [display, setDisplay] = useState(label)
-  const [hovered, setHovered] = useState(false)
-  const frameRef = useRef<NodeJS.Timeout>()
-
-  const scramble = useCallback(() => {
-    let count = 0
-    const maxShuffles = 8
-
-    function tick() {
-      count++
-      if (count < maxShuffles) {
-        setDisplay(shuffleString(label))
-        frameRef.current = setTimeout(tick, 50)
-      } else {
-        setDisplay(label)
-      }
-    }
-
-    setDisplay(shuffleString(label))
-    frameRef.current = setTimeout(tick, 50)
-  }, [label])
-
-  const onEnter = () => {
-    setHovered(true)
-    clearTimeout(frameRef.current)
-    scramble()
-  }
-
-  const onLeave = () => {
-    setHovered(false)
-    clearTimeout(frameRef.current)
-    setDisplay(label)
-  }
+  // Arrows: ▴ (up) for prev, ▾ (down) for next
+  const arrow = direction === 'prev' ? '\u25B4' : '\u25BE'
+  const text = direction === 'prev' ? `[${arrow} ${label}]` : `[${label} ${arrow}]`
 
   return (
     <Link
       href={href}
-      className={`fixed top-1/2 z-40 hidden lg:flex items-center font-mono text-[11px] tracking-[0.1em] cursor-pointer ${
-        side === 'left' ? 'left-4' : 'right-4'
-      }`}
-      style={{
-        transform: `translateY(-50%) rotate(${side === 'left' ? '-90' : '90'}deg)`,
-        transformOrigin: 'center center',
-        backgroundColor: hovered ? '#000000' : 'transparent',
-        color: hovered ? '#ffffff' : undefined,
-        transition: 'background-color 0.08s, color 0.08s',
-        whiteSpace: 'nowrap',
-      }}
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
+      className="group flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] text-th-text3 transition-colors duration-200 hover:text-th-text whitespace-nowrap"
     >
-      <span className="px-1.5 py-0.5 inline-block">[{display}]</span>
+      <span className="relative px-2 py-1 inline-block overflow-hidden">
+        <span className="absolute inset-0 bg-th-text origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-200" />
+        <span className="relative group-hover:text-th-bg transition-colors duration-200">
+          {text}
+        </span>
+      </span>
     </Link>
   )
 }
 
 export default function ProjectSideNav({ prev, next }: ProjectSideNavProps) {
   return (
-    <>
-      <SideLink href={`/work/${prev.slug}`} label={`◂ ${prev.title}`} side="left" />
-      <SideLink href={`/work/${next.slug}`} label={`${next.title} ▸`} side="right" />
-    </>
+    <div
+      className="fixed left-5 top-1/2 z-40 hidden lg:flex flex-col items-start gap-3"
+      style={{ transform: 'translateY(-50%)' }}
+    >
+      <div style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+        <NavLink href={`/work/${prev.slug}`} label={prev.title} direction="prev" />
+      </div>
+      <div className="w-px h-4 bg-th-border ml-3" />
+      <div style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+        <NavLink href={`/work/${next.slug}`} label={next.title} direction="next" />
+      </div>
+    </div>
   )
 }

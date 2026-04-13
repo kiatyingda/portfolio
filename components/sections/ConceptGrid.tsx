@@ -34,11 +34,17 @@ export default function ConceptGrid({ items }: ConceptGridProps) {
                 {item.status === 'winner' ? 'Shipped' : 'Tested'}
               </span>
             )}
-            <div className="mb-4 flex justify-center opacity-50 group-hover:opacity-70 transition-opacity duration-200">
-              <MiniPhoneSketch />
+            <div className="mb-4 flex justify-center">
+              {item.image ? (
+                <div className="w-[120px] h-[220px] overflow-hidden">
+                  <img src={item.image} alt={item.title} className="w-full h-full object-cover object-top opacity-80 group-hover:opacity-100 transition-opacity duration-200" />
+                </div>
+              ) : (
+                <MiniPhoneSketch />
+              )}
             </div>
-            <p className="font-display text-[14px] font-light text-th-text tracking-[0.04em] mb-2">{item.title}</p>
-            <p className="font-display text-[13px] font-light leading-[1.6] text-th-text2 tracking-[0.03em]">{item.body}</p>
+            <p className="font-display text-[14px] font-semibold text-th-text tracking-[0.03em] mb-2">{item.title}</p>
+            <p className="font-display text-[13px] font-semibold leading-[1.6] text-th-text2 tracking-[0.02em]">{item.body}</p>
           </button>
         ))}
       </div>

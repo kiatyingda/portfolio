@@ -5,7 +5,7 @@ export const siteConfig = {
   linkedin: 'https://linkedin.com/in/kiatyingda',
   resumeUrl: '#', // replace with actual resume URL
   heroCopy: {
-    headline: 'Clarity, craft, and business impact.',
+    headline: 'Clarity, craft, and business impact',
     body: 'Product designer turning complex problems into confident experiences.',
     cta: 'View selected work',
   },
@@ -23,15 +23,16 @@ export const siteConfig = {
     ],
     career: [
       {
-        period: '2011 – 2021',
-        company: '2359',
-        role: 'Founding designer',
-        current: false,
+        period: '2025 – now',
+        company: 'OKX',
+        role: 'Senior product designer',
+        current: true,
         bullets: [
-          'Founding designer — built design processes from pitch to final delivery, engineer handoff, and knowledge transfer as the team grew',
-          'Led key account projects for DBS, Standard Chartered, F1, Apple — from pitch to delivery, often managing multiple designers',
-          'Early adopter of prototyping tools to tell stories, tighten client feedback loops, and improve design handoff for flows — when most designers were still delivering static screens',
+          'Boost: X Launch, X Stake, Leaderboard',
+          'Smart Money — thinking beyond a single surface',
+          'Feed, Token/Discover tab merge — navigating complexity across teams',
         ],
+        link: '/work/okx-boost',
       },
       {
         period: '2021 – 2025',
@@ -47,16 +48,15 @@ export const siteConfig = {
         link: '/work/grab-multiple-ride-types',
       },
       {
-        period: '2025 – now',
-        company: 'OKX',
-        role: 'Senior product designer',
-        current: true,
+        period: '2011 – 2021',
+        company: '2359',
+        role: 'Founding designer',
+        current: false,
         bullets: [
-          'Boost: X Launch, X Stake, Leaderboard',
-          'Smart Money — thinking beyond a single surface',
-          'Feed, Token/Discover tab merge — navigating complexity across teams',
+          'Founding designer — built design processes from pitch to final delivery, engineer handoff, and knowledge transfer as the team grew',
+          'Led key account projects for DBS, Standard Chartered, F1, Apple — from pitch to delivery, often managing multiple designers',
+          'Early adopter of prototyping tools to tell stories, tighten client feedback loops, and improve design handoff for flows — when most designers were still delivering static screens',
         ],
-        link: '/work/okx-boost',
       },
     ],
   },

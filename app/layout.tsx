@@ -7,7 +7,7 @@ import Nav from '@/components/Nav'
 const interTight = Inter_Tight({
   subsets: ['latin'],
   variable: '--font-display',
-  weight: ['100', '200', '300', '400', '500'],
+  weight: ['100', '200', '300', '400', '500', '600', '700'],
   display: 'swap',
 })
 

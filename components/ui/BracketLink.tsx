@@ -58,12 +58,13 @@ export default function BracketLink({ href, children, className = '', external, 
   }
 
   // When inside blend-mode: exclusion, use white bg + black text (blend inverts it to look black bg + white text)
-  const hoverBg = blended ? '#ffffff' : '#000000'
-  const hoverColor = blended ? '#000000' : '#ffffff'
+  // Otherwise use theme vars so it works in both light and dark sections
+  const hoverBg = blended ? '#ffffff' : 'var(--text)'
+  const hoverColor = blended ? '#000000' : 'var(--bg)'
 
   const style: React.CSSProperties = {
     backgroundColor: hovered ? hoverBg : 'transparent',
-    color: hovered ? hoverColor : undefined,
+    color: hovered ? hoverColor : 'var(--text)',
     transition: 'background-color 0.08s, color 0.08s',
   }
 
@@ -77,7 +78,7 @@ export default function BracketLink({ href, children, className = '', external, 
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className={`font-mono text-[11px] tracking-[0.1em] inline-block cursor-pointer ${className}`}
+        className={`font-mono text-[14px] font-medium tracking-[0.08em] inline-block cursor-pointer ${className}`}
         style={style}
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
@@ -90,7 +91,7 @@ export default function BracketLink({ href, children, className = '', external, 
   return (
     <Link
       href={href}
-      className={`font-mono text-[11px] tracking-[0.1em] inline-block cursor-pointer ${className}`}
+      className={`font-mono text-[14px] font-medium tracking-[0.08em] inline-block cursor-pointer ${className}`}
       style={style}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
