@@ -570,16 +570,7 @@ function animate(timestamp) {
 
     if (y < -50 || y > H + 50 || x < -50 || x > W + 50) continue
 
-    let a = ALPHA_LUT[dark[i]]
-    if (assemblyProgress > 0) {
-      if (isJoiner[i]) {
-        // Joiners brighten to full headline strength
-        a = a + (1.0 - a) * assemblyProgress
-      } else {
-        // Non-joiners fade almost out so text reads as the only figure
-        a = a * (1 - assemblyProgress * 0.92)
-      }
-    }
+    const a = ALPHA_LUT[dark[i]]
     if (a !== lastA) { ctx.globalAlpha = a; lastA = a }
 
     // Joiners swap to their target letter once the magnetic pull is past the
