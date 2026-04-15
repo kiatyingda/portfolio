@@ -94,8 +94,21 @@ const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true })
 
 let N = 0
 let px, py, ox, oy, vx, vy, rot, rotV, dark, bold, falling, fallTime
+let tx, ty, isJoiner
+let joinerCh          // per-joiner letter to display during hold (e.g. 'K','I','A','T')
 let chars = []
 let atlas = {}, boldAtlas = {}
+
+// ── Assembly cycle ───────────────────────────────────────
+// Periodically, joiner particles migrate to form "KIAT YINGDA", hold, then return.
+const ASSEMBLY_PERIOD = 14000  // ms between triggers
+const ASSEMBLY_IN = 1800       // magnetic pull — chars sweep toward target
+const ASSEMBLY_HOLD = 3800     // locked solid
+const ASSEMBLY_OUT = 1600      // release — chars drift back
+let assemblyStart = -1
+let assemblyPhase = 'idle'     // 'idle' | 'in' | 'hold' | 'out'
+let assemblyProgress = 0
+function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 }
 
 let mouseX = -9999, mouseY = -9999
 let charW = FONT_SIZE * 0.6
@@ -151,13 +164,127 @@ function allocate(n) {
   bold = new Uint8Array(n)
   falling = new Uint8Array(n)
   fallTime = new Float64Array(n)
+  tx = new Float32Array(n)
+  ty = new Float32Array(n)
+  isJoiner = new Uint8Array(n)
+  joinerCh = new Array(n)
   chars = new Array(n)
+}
+
+// Sample the phrase onto a grid aligned with charW × LINE_HEIGHT so the
+// assembled text looks like native ASCII (not blurry raster). Returns array of
+// {x,y} target positions at column/row center coords.
+function computeAssemblyTargets() {
+  const phrase = 'KIAT YINGDA'
+  const off = document.createElement('canvas')
+  off.width = W
+  off.height = H
+  const oc = off.getContext('2d')
+  const FONT_FAMILY = `900 100px "Helvetica Neue", "Arial Black", sans-serif`
+  oc.font = FONT_FAMILY
+  const measuredAt100 = oc.measureText(phrase).width
+  const targetSize = Math.min((W * 0.85) / measuredAt100 * 100, H * 0.5)
+  const font = `900 ${targetSize}px "Helvetica Neue", "Arial Black", sans-serif`
+  oc.font = font
+  oc.textBaseline = 'middle'
+  oc.textAlign = 'left'
+  // Compute per-letter x ranges so we can tag each target with its letter.
+  const totalW = oc.measureText(phrase).width
+  const startX = (W - totalW) / 2
+  const letterRanges = []
+  let cursor = startX
+  for (let li = 0; li < phrase.length; li++) {
+    const ch = phrase[li]
+    const w = oc.measureText(ch).width
+    if (ch !== ' ') letterRanges.push({ ch, x0: cursor, x1: cursor + w })
+    cursor += w
+  }
+  oc.fillStyle = '#000'
+  oc.fillRect(0, 0, W, H)
+  oc.fillStyle = '#fff'
+  oc.fillText(phrase, startX, H / 2)
+  const data = oc.getImageData(0, 0, W, H).data
+  let bright = 0
+  for (let i = 0; i < data.length; i += 4) if (data[i] > 40) bright++
+  window.__maskStats = { W, H, targetSize, bright, phrase }
+
+  const cols = Math.floor(W / charW)
+  const rows = Math.floor(H / LINE_HEIGHT)
+  const targets = []
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * charW + charW / 2
+      const y = r * LINE_HEIGHT + LINE_HEIGHT / 2
+      const ix = Math.round(x), iy = Math.round(y)
+      if (ix < 0 || ix >= W || iy < 0 || iy >= H) continue
+      const idx = (iy * W + ix) << 2
+      if (data[idx] > 40) {
+        let ch = '·'
+        for (let k = 0; k < letterRanges.length; k++) {
+          const lr = letterRanges[k]
+          if (x >= lr.x0 && x < lr.x1) { ch = lr.ch; break }
+        }
+        targets.push({ x: c * charW, y: r * LINE_HEIGHT, ch })
+      }
+    }
+  }
+  return targets
+}
+
+// For each text-pixel target, claim the nearest unused particle.
+// Uses a coarse spatial grid for speed — O(M * k) instead of O(M * N).
+function assignJoiners(targets) {
+  const GRID = 60
+  const buckets = new Map()
+  for (let i = 0; i < N; i++) {
+    isJoiner[i] = 0
+    tx[i] = ox[i]
+    ty[i] = oy[i]
+    const gx = Math.floor(ox[i] / GRID)
+    const gy = Math.floor(oy[i] / GRID)
+    const k = gx * 10000 + gy
+    let arr = buckets.get(k)
+    if (!arr) { arr = []; buckets.set(k, arr) }
+    arr.push(i)
+  }
+  const used = new Uint8Array(N)
+  // Shuffle targets so mid-letter picks don't starve edge targets
+  for (let i = targets.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0
+    const tmp = targets[i]; targets[i] = targets[j]; targets[j] = tmp
+  }
+  for (const t of targets) {
+    const gx = Math.floor(t.x / GRID), gy = Math.floor(t.y / GRID)
+    let best = -1, bestD = Infinity
+    for (let dx = -3; dx <= 3; dx++) {
+      for (let dy = -3; dy <= 3; dy++) {
+        const arr = buckets.get((gx + dx) * 10000 + (gy + dy))
+        if (!arr) continue
+        for (let k = 0; k < arr.length; k++) {
+          const i = arr[k]
+          if (used[i]) continue
+          const ddx = ox[i] - t.x, ddy = oy[i] - t.y
+          const d = ddx * ddx + ddy * ddy
+          if (d < bestD) { bestD = d; best = i }
+        }
+      }
+    }
+    if (best >= 0) {
+      tx[best] = t.x
+      ty[best] = t.y
+      isJoiner[best] = 1
+      joinerCh[best] = t.ch
+      used[best] = 1
+    }
+  }
 }
 
 function buildAtlas() {
   atlas = {}
   boldAtlas = {}
   const seen = new Set(chars)
+  // Guarantee joiner letters are atlas'd even if they never appear in the stream.
+  for (const ch of 'KIATYNGD') seen.add(ch)
   const lw = Math.ceil(charW) + ATLAS_PAD * 2
   const lh = FONT_SIZE + ATLAS_PAD * 2
   for (const ch of seen) {
@@ -187,76 +314,32 @@ function generateShape() {
   const cols = Math.floor(W / charW)
   const rows = Math.floor(H / LINE_HEIGHT)
 
-  // ── KYD mask ──
-  const maskCanvas = document.createElement('canvas')
-  maskCanvas.width = W
-  maskCanvas.height = H
-  const maskCtx = maskCanvas.getContext('2d')
-  maskCtx.fillStyle = '#000'
-  maskCtx.fillRect(0, 0, W, H)
-
-  const fontSize = Math.min(W * 0.22, H * 0.45)
-  maskCtx.font = `500 ${fontSize}px "Helvetica Neue", "Arial", sans-serif`
-  maskCtx.textBaseline = 'middle'
-  maskCtx.fillStyle = '#fff'
-  const letters = ['k', 'y', 'd']
-  const gap = fontSize * 0.1
-  const totalWidth = letters.reduce((sum, ch) => sum + maskCtx.measureText(ch).width, 0) + gap * 2
-  let cx = (W - totalWidth) / 2
-  for (const ch of letters) {
-    maskCtx.fillText(ch, cx, H / 2)
-    cx += maskCtx.measureText(ch).width + gap
-  }
-  const maskData = maskCtx.getImageData(0, 0, W, H).data
-
-  // ── Rectangle bounds (centered, ~70% x 60% of viewport) ──
-  const rectL = W * 0.15, rectR = W * 0.85
-  const rectT = H * 0.2, rectB = H * 0.8
-  const fadeZone = Math.min(W, H) * 0.12
-
   const tempPx = [], tempPy = [], tempDark = [], tempChars = [], tempBold = []
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      // Slight thinning — skip every 4th cell
-      if ((row + col) % 4 === 0) continue
+  // Build one shuffled keyword string per row so horizontal reads show real
+  // phrases from the deck ("GRAB · OKX · $4B VOLUME · SMART MONEY") rather
+  // than random mid-word fragments.
+  function rowStream(colsNeeded) {
+    let s = ''
+    // Start at a fresh keyword each row, not mid-phrase
+    while (s.length < colsNeeded + 4) {
+      const kw = KEYWORDS[(Math.random() * KEYWORDS.length) | 0]
+      s += kw + ' · '
+    }
+    return s
+  }
 
+  for (let row = 0; row < rows; row++) {
+    const stream = rowStream(cols)
+    for (let col = 0; col < cols; col++) {
       const x = col * charW
       const y = row * LINE_HEIGHT
-
-      // KYD mask — skip if inside letter
-      const mx = Math.round(x + charW / 2)
-      const my = Math.round(y + LINE_HEIGHT / 2)
-      if (mx >= 0 && mx < W && my >= 0 && my < H) {
-        const idx = (my * W + mx) << 2
-        if (maskData[idx] > 80) continue
-      }
-
-      // Soft-edged rectangle fade
-      let opacity = 1
-      const dl = x - rectL, dr = rectR - x
-      const dt = y - rectT, db = rectB - y
-
-      if (dl < 0 || dr < 0 || dt < 0 || db < 0) {
-        // Outside rectangle — sparse ambient (20% chance)
-        if (Math.random() > 0.2) continue
-        opacity = 0.15
-      } else {
-        // Inside rectangle — fade near edges
-        const edgeDist = Math.min(dl, dr, dt, db)
-        if (edgeDist < fadeZone) {
-          opacity = edgeDist / fadeZone
-          opacity = opacity * opacity
-        }
-      }
-
-      const si = (row * cols + col) % KW_STREAM.length
-      const ch = KW_STREAM[si]
-      if (ch === ' ') continue
+      const ch = stream[col]
+      if (ch === ' ') continue  // preserve natural word breaks as whitespace
 
       tempPx.push(x)
       tempPy.push(y)
-      tempDark.push((opacity * 255) | 0)
+      tempDark.push(255)
       tempChars.push(ch)
       tempBold.push(0)
     }
@@ -283,6 +366,14 @@ function generateShape() {
   }
 
   buildAtlas()
+
+  // ── Assembly targets: which particles form KIAT YINGDA during pulses ──
+  const assemblyTargets = computeAssemblyTargets()
+  assignJoiners(assemblyTargets)
+  let joinerCount = 0
+  for (let i = 0; i < N; i++) if (isJoiner[i]) joinerCount++
+  window.__asciiDebug = { N, targetCount: assemblyTargets.length, joinerCount, charW, LINE_HEIGHT, W, H }
+  assemblyStart = performance.now() + 1800  // first assembly after initial settle
 
   // ── Ambient floaters ──
   for (let i = 0; i < AMBIENT_COUNT; i++) {
@@ -317,8 +408,42 @@ function animate(timestamp) {
   const mx = mouseX, my = mouseY
   let lastA = -1
 
-  // ── Flicker ──
-  const flickerCount = Math.max(1, (N * 0.02) | 0)
+  // ── Assembly phase state machine ──
+  if (assemblyStart > 0 && now >= assemblyStart) {
+    const elapsed = now - assemblyStart
+    if (elapsed < ASSEMBLY_IN) {
+      assemblyPhase = 'in'
+      assemblyProgress = easeInOutCubic(elapsed / ASSEMBLY_IN)
+    } else if (elapsed < ASSEMBLY_IN + ASSEMBLY_HOLD) {
+      assemblyPhase = 'hold'
+      assemblyProgress = 1
+    } else if (elapsed < ASSEMBLY_IN + ASSEMBLY_HOLD + ASSEMBLY_OUT) {
+      assemblyPhase = 'out'
+      const t = (elapsed - ASSEMBLY_IN - ASSEMBLY_HOLD) / ASSEMBLY_OUT
+      assemblyProgress = 1 - easeInOutCubic(t)
+    } else {
+      assemblyPhase = 'idle'
+      assemblyProgress = 0
+      assemblyStart = now + ASSEMBLY_PERIOD - (ASSEMBLY_IN + ASSEMBLY_HOLD + ASSEMBLY_OUT)
+    }
+  }
+  window.__assemblyProgress = assemblyProgress
+  if (assemblyProgress === 1 && !window.__didDumpAlpha) {
+    window.__didDumpAlpha = true
+    // Sample first 5 joiners and first 5 non-joiners
+    const samp = { joiners: [], nonJoiners: [] }
+    for (let i = 0; i < N && (samp.joiners.length < 5 || samp.nonJoiners.length < 5); i++) {
+      const base = ALPHA_LUT[dark[i]]
+      const a = isJoiner[i] ? base + (1.0 - base) * assemblyProgress : base * (1 - assemblyProgress * 0.92)
+      const entry = { i, base, a, px: px[i], py: py[i], tx: tx[i], ty: ty[i] }
+      if (isJoiner[i] && samp.joiners.length < 5) samp.joiners.push(entry)
+      else if (!isJoiner[i] && samp.nonJoiners.length < 5) samp.nonJoiners.push(entry)
+    }
+    window.__alphaSamples = samp
+  }
+
+  // ── Flicker ── (kept minimal so keyword rows stay legible)
+  const flickerCount = Math.max(1, (N * 0.004) | 0)
   for (let f = 0; f < flickerCount; f++) {
     const ri = (Math.random() * N) | 0
     const si = (Math.random() * KW_STREAM.length) | 0
@@ -350,7 +475,45 @@ function animate(timestamp) {
     let x = px[i], y = py[i]
     let _vx = vx[i], _vy = vy[i]
 
-    if (falling[i]) {
+    // Magnetic motion for joiners during assembly — real velocity-based
+    // attraction toward the text pixel, lock on arrival, release on fall-out.
+    // Skips the default spring/noise so chars sweep cleanly instead of
+    // wobbling in place.
+    let joinerActed = false
+    if (isJoiner[i] && !falling[i] && assemblyPhase !== 'idle') {
+      if (assemblyPhase === 'in') {
+        const dx = tx[i] - x, dy = ty[i] - y
+        // Magnetic pull — strengthens as assembly progresses.
+        const pull = 0.04 + 0.09 * assemblyProgress
+        _vx += dx * pull
+        _vy += dy * pull
+        _vx *= 0.84
+        _vy *= 0.84
+        // Snap when close and slow so the phrase reads cleanly.
+        if (assemblyProgress > 0.75 && dx * dx + dy * dy < 4 && _vx * _vx + _vy * _vy < 0.1) {
+          x = tx[i]; y = ty[i]; _vx = 0; _vy = 0
+        }
+        rotV[i] *= 0.9
+        joinerActed = true
+      } else if (assemblyPhase === 'hold') {
+        // Pinned — no drift, no wobble.
+        x = tx[i]; y = ty[i]; _vx = 0; _vy = 0
+        rot[i] = 0; rotV[i] = 0
+        joinerActed = true
+      } else if (assemblyPhase === 'out') {
+        // Release — weak pull back to origin, so it drifts not snaps.
+        const dx = ox[i] - x, dy = oy[i] - y
+        _vx += dx * 0.025
+        _vy += dy * 0.025
+        _vx *= 0.9
+        _vy *= 0.9
+        joinerActed = true
+      }
+    }
+
+    if (joinerActed) {
+      x += _vx; y += _vy
+    } else if (falling[i]) {
       const elapsed = now - fallTime[i]
       if (elapsed < RECOVER_DELAY) {
         _vy += GRAVITY
@@ -375,6 +538,8 @@ function animate(timestamp) {
           falling[i] = 0; rot[i] = 0; rotV[i] = 0
         }
       }
+      _vx *= 0.97; _vy *= 0.97
+      x += _vx; y += _vy
     } else {
       _vx += (ox[i] - x) * 0.1
       _vy += (oy[i] - y) * 0.1
@@ -391,24 +556,41 @@ function animate(timestamp) {
         _vy += Math.random() * 2
         rotV[i] = (dx > 0 ? 1 : -1) * (Math.random() * 0.3 + 0.1)
       }
+      _vx *= 0.97; _vy *= 0.97
+      x += _vx; y += _vy
     }
 
-    _vx *= 0.97; _vy *= 0.97
-    x += _vx; y += _vy
     px[i] = x; py[i] = y; vx[i] = _vx; vy[i] = _vy
 
     rot[i] += rotV[i]
-    if (!falling[i]) {
+    if (!falling[i] && !joinerActed) {
       rotV[i] += -rot[i] * 0.08
       rotV[i] *= 0.85
     }
 
     if (y < -50 || y > H + 50 || x < -50 || x > W + 50) continue
 
-    const a = ALPHA_LUT[dark[i]]
+    let a = ALPHA_LUT[dark[i]]
+    if (assemblyProgress > 0) {
+      if (isJoiner[i]) {
+        // Joiners brighten to full headline strength
+        a = a + (1.0 - a) * assemblyProgress
+      } else {
+        // Non-joiners fade almost out so text reads as the only figure
+        a = a * (1 - assemblyProgress * 0.92)
+      }
+    }
     if (a !== lastA) { ctx.globalAlpha = a; lastA = a }
 
-    const at = (bold[i] ? boldAtlas : atlas)[chars[i]]
+    // Joiners swap to their target letter once the magnetic pull is past the
+    // halfway mark, and render bold during hold so "KIAT YINGDA" reads cleanly.
+    let renderCh = chars[i]
+    let renderBold = bold[i]
+    if (isJoiner[i] && assemblyProgress > 0.5) {
+      renderCh = joinerCh[i]
+      renderBold = 1
+    }
+    const at = (renderBold ? boldAtlas : atlas)[renderCh]
     if (!at) continue
 
     const r = rot[i]
