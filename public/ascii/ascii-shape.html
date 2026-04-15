@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASCII Shape</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+canvas#main { display: block; }
+</style>
+</head>
+<body>
+
+<canvas id="main"></canvas>
+
+<script type="module">
+import { prepareWithSegments, layoutWithLines } from 'https://esm.sh/@chenglou/pretext'
+
+// ── Config ──────────────────────────────────────────────
+const FONT_SIZE = 14
+const FONT = `${FONT_SIZE}px "Courier New"`
+const BOLD_FONT = `${FONT_SIZE}px "Courier New"`
+const LINE_HEIGHT = FONT_SIZE + 3
+const MAX_PARTICLES = 14000
+const MOUSE_RADIUS = 80
+const MOUSE_R2 = MOUSE_RADIUS * MOUSE_RADIUS
+const GRAVITY = 0.4
+const RECOVER_DELAY = 5000
+const ATLAS_PAD = 2
+const KEYWORDS = [
+  'CLARITY', 'CRAFT', 'IMPACT', 'KIAT YINGDA', 'SENIOR PRODUCT DESIGNER',
+  'SYSTEMS THINKER', 'BUILDER', 'PRODUCT LOGIC', 'DESIGN QUALITY',
+  'GRAB', 'OKX', '2359 MEDIA', 'SINGHEALTH',
+  'RIDE-HAILING DESIGN LEAD', 'BOOKING FLOW REDESIGN',
+  'SMART MONEY', 'X LAUNCH', 'X STAKE', 'LEADERBOARD',
+  '+$1M REVENUE', '$4B VOLUME', '+239% MEMBERS',
+  'BOOKING FLOW', 'CROSS-SELL', 'ADS PLAYBOOK',
+  'DBS', 'STANDARD CHARTERED', 'F1', 'FOUNDING DESIGNER',
+  'BUSINESS IMPACT', 'SINGAPORE', 'OPEN TO ROLES',
+]
+const KW_STREAM = (() => {
+  let s = ''
+  for (let i = 0; s.length < 5000; i++) s += KEYWORDS[i % KEYWORDS.length] + ' · '
+  return s
+})()
+
+// ── Simplex-like noise for organic blob shape ──────────
+function hash(x, y) {
+  let h = x * 374761393 + y * 668265263 + 1274126177
+  h = (h ^ (h >> 13)) * 1103515245
+  return ((h ^ (h >> 16)) & 0x7fffffff) / 0x7fffffff
+}
+
+function smoothNoise(x, y) {
+  const ix = Math.floor(x), iy = Math.floor(y)
+  const fx = x - ix, fy = y - iy
+  const sx = fx * fx * (3 - 2 * fx)
+  const sy = fy * fy * (3 - 2 * fy)
+  const n00 = hash(ix, iy)
+  const n10 = hash(ix + 1, iy)
+  const n01 = hash(ix, iy + 1)
+  const n11 = hash(ix + 1, iy + 1)
+  return n00 * (1 - sx) * (1 - sy) + n10 * sx * (1 - sy) + n01 * (1 - sx) * sy + n11 * sx * sy
+}
+
+function fbm(x, y, octaves) {
+  let val = 0, amp = 0.5, freq = 1
+  for (let i = 0; i < octaves; i++) {
+    val += amp * smoothNoise(x * freq, y * freq)
+    amp *= 0.5
+    freq *= 2
+  }
+  return val
+}
+
+// ── Uniform alpha — all chars same colour ──────────────
+const UNIFORM_ALPHA = 0.35
+const ALPHA_LUT = new Float32Array(256)
+for (let i = 0; i < 256; i++) {
+  ALPHA_LUT[i] = i > 0 ? UNIFORM_ALPHA : 0
+}
+
+// ── State (SoA) ────────────────────────────────────────
+const canvas = document.getElementById('main')
+const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true })
+
+let N = 0
+let px, py, ox, oy, vx, vy, rot, rotV, dark, bold, falling, fallTime
+let chars = []
+let atlas = {}, boldAtlas = {}
+
+let mouseX = -9999, mouseY = -9999
+let charW = FONT_SIZE * 0.6
+let dpr = 1, W = 0, H = 0
+let animating = false
+
+// ── Ambient floating particles ─────────────────────────
+const AMBIENT_COUNT = 180
+const ambPx = new Float32Array(AMBIENT_COUNT)
+const ambPy = new Float32Array(AMBIENT_COUNT)
+const ambVx = new Float32Array(AMBIENT_COUNT)
+const ambVy = new Float32Array(AMBIENT_COUNT)
+const ambPhase = new Float32Array(AMBIENT_COUNT)
+const ambAlpha = new Float32Array(AMBIENT_COUNT)
+const ambSize = new Float32Array(AMBIENT_COUNT)
+const ambChars = new Array(AMBIENT_COUNT)
+let ambInitialized = false
+
+function measureCharWidth() {
+  const widths = []
+  for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    const p = prepareWithSegments(ch.repeat(20), FONT)
+    const { lines } = layoutWithLines(p, 100000, LINE_HEIGHT)
+    if (lines.length > 0 && lines[0].width > 0) widths.push(lines[0].width / 20)
+  }
+  if (widths.length > 0) charW = Math.ceil(Math.max(...widths) * 100) / 100
+}
+
+function setupCanvas() {
+  dpr = window.devicePixelRatio || 1
+  W = window.innerWidth
+  H = window.innerHeight
+  canvas.width = W * dpr
+  canvas.height = H * dpr
+  canvas.style.width = W + 'px'
+  canvas.style.height = H + 'px'
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.fillStyle = '#000'
+  ctx.fillRect(0, 0, W, H)
+}
+
+function allocate(n) {
+  N = n
+  px = new Float32Array(n)
+  py = new Float32Array(n)
+  ox = new Float32Array(n)
+  oy = new Float32Array(n)
+  vx = new Float32Array(n)
+  vy = new Float32Array(n)
+  rot = new Float32Array(n)
+  rotV = new Float32Array(n)
+  dark = new Uint8Array(n)
+  bold = new Uint8Array(n)
+  falling = new Uint8Array(n)
+  fallTime = new Float64Array(n)
+  chars = new Array(n)
+}
+
+function buildAtlas() {
+  atlas = {}
+  boldAtlas = {}
+  const seen = new Set(chars)
+  const lw = Math.ceil(charW) + ATLAS_PAD * 2
+  const lh = FONT_SIZE + ATLAS_PAD * 2
+  for (const ch of seen) {
+    const c = document.createElement('canvas')
+    c.width = lw * dpr; c.height = lh * dpr
+    const cx = c.getContext('2d')
+    cx.scale(dpr, dpr); cx.font = FONT
+    cx.textBaseline = 'top'; cx.fillStyle = '#fff'
+    cx.fillText(ch, ATLAS_PAD, ATLAS_PAD)
+    atlas[ch] = { canvas: c, w: lw, h: lh }
+
+    const bc = document.createElement('canvas')
+    bc.width = lw * dpr; bc.height = lh * dpr
+    const bx = bc.getContext('2d')
+    bx.scale(dpr, dpr); bx.font = BOLD_FONT
+    bx.textBaseline = 'top'; bx.fillStyle = '#fff'
+    bx.fillText(ch, ATLAS_PAD, ATLAS_PAD)
+    boldAtlas[ch] = { canvas: bc, w: lw, h: lh }
+  }
+}
+
+// ── Soft-edged ASCII rectangle with KYD negative space + ambient field ──
+function generateShape() {
+  setupCanvas()
+  measureCharWidth()
+
+  const cols = Math.floor(W / charW)
+  const rows = Math.floor(H / LINE_HEIGHT)
+
+  // ── KYD mask ──
+  const maskCanvas = document.createElement('canvas')
+  maskCanvas.width = W
+  maskCanvas.height = H
+  const maskCtx = maskCanvas.getContext('2d')
+  maskCtx.fillStyle = '#000'
+  maskCtx.fillRect(0, 0, W, H)
+
+  const fontSize = Math.min(W * 0.22, H * 0.45)
+  maskCtx.font = `500 ${fontSize}px "Helvetica Neue", "Arial", sans-serif`
+  maskCtx.textBaseline = 'middle'
+  maskCtx.fillStyle = '#fff'
+  const letters = ['k', 'y', 'd']
+  const gap = fontSize * 0.1
+  const totalWidth = letters.reduce((sum, ch) => sum + maskCtx.measureText(ch).width, 0) + gap * 2
+  let cx = (W - totalWidth) / 2
+  for (const ch of letters) {
+    maskCtx.fillText(ch, cx, H / 2)
+    cx += maskCtx.measureText(ch).width + gap
+  }
+  const maskData = maskCtx.getImageData(0, 0, W, H).data
+
+  // ── Rectangle bounds (centered, ~70% x 60% of viewport) ──
+  const rectL = W * 0.15, rectR = W * 0.85
+  const rectT = H * 0.2, rectB = H * 0.8
+  const fadeZone = Math.min(W, H) * 0.12
+
+  const tempPx = [], tempPy = [], tempDark = [], tempChars = [], tempBold = []
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      // Slight thinning — skip every 4th cell
+      if ((row + col) % 4 === 0) continue
+
+      const x = col * charW
+      const y = row * LINE_HEIGHT
+
+      // KYD mask — skip if inside letter
+      const mx = Math.round(x + charW / 2)
+      const my = Math.round(y + LINE_HEIGHT / 2)
+      if (mx >= 0 && mx < W && my >= 0 && my < H) {
+        const idx = (my * W + mx) << 2
+        if (maskData[idx] > 80) continue
+      }
+
+      // Soft-edged rectangle fade
+      let opacity = 1
+      const dl = x - rectL, dr = rectR - x
+      const dt = y - rectT, db = rectB - y
+
+      if (dl < 0 || dr < 0 || dt < 0 || db < 0) {
+        // Outside rectangle — sparse ambient (20% chance)
+        if (Math.random() > 0.2) continue
+        opacity = 0.15
+      } else {
+        // Inside rectangle — fade near edges
+        const edgeDist = Math.min(dl, dr, dt, db)
+        if (edgeDist < fadeZone) {
+          opacity = edgeDist / fadeZone
+          opacity = opacity * opacity
+        }
+      }
+
+      const si = (row * cols + col) % KW_STREAM.length
+      const ch = KW_STREAM[si]
+      if (ch === ' ') continue
+
+      tempPx.push(x)
+      tempPy.push(y)
+      tempDark.push((opacity * 255) | 0)
+      tempChars.push(ch)
+      tempBold.push(0)
+    }
+  }
+
+  // Cap — keep densest particles
+  let indices = tempPx.map((_, i) => i)
+  if (indices.length > MAX_PARTICLES) {
+    indices.sort((a, b) => tempDark[b] - tempDark[a])
+    indices.length = MAX_PARTICLES
+  }
+  indices.sort((a, b) => tempDark[a] - tempDark[b])
+
+  allocate(indices.length)
+  for (let j = 0; j < indices.length; j++) {
+    const i = indices[j]
+    ox[j] = tempPx[i]
+    oy[j] = tempPy[i]
+    px[j] = ox[j]
+    py[j] = oy[j]
+    dark[j] = tempDark[i]
+    bold[j] = tempBold[i]
+    chars[j] = tempChars[i]
+  }
+
+  buildAtlas()
+
+  // ── Ambient floaters ──
+  for (let i = 0; i < AMBIENT_COUNT; i++) {
+    ambPx[i] = Math.random() * W
+    ambPy[i] = Math.random() * H
+    const angle = Math.random() * Math.PI * 2
+    const speed = 0.06 + Math.random() * 0.18
+    ambVx[i] = Math.cos(angle) * speed
+    ambVy[i] = Math.sin(angle) * speed
+    ambPhase[i] = Math.random() * Math.PI * 2
+    ambAlpha[i] = 0.03 + Math.random() * 0.08
+    ambSize[i] = 4 + Math.random() * 3
+    ambChars[i] = KW_STREAM[(Math.random() * KW_STREAM.length) | 0]
+    if (ambChars[i] === ' ') ambChars[i] = '·'
+  }
+  ambInitialized = true
+
+  if (!animating) { animating = true; animate() }
+}
+
+// ── Render ──────────────────────────────────────────────
+let lastFrame = 0
+function animate(timestamp) {
+  if (timestamp - lastFrame < 32) { requestAnimationFrame(animate); return }
+  lastFrame = timestamp
+
+  ctx.globalAlpha = 1
+  ctx.fillStyle = '#000'
+  ctx.fillRect(0, 0, W, H)
+
+  const now = performance.now()
+  const mx = mouseX, my = mouseY
+  let lastA = -1
+
+  // ── Flicker ──
+  const flickerCount = Math.max(1, (N * 0.02) | 0)
+  for (let f = 0; f < flickerCount; f++) {
+    const ri = (Math.random() * N) | 0
+    const si = (Math.random() * KW_STREAM.length) | 0
+    const ch = KW_STREAM[si]
+    if (ch !== ' ') {
+      chars[ri] = ch
+      if (!atlas[ch]) {
+        const lw = Math.ceil(charW) + ATLAS_PAD * 2
+        const lh = FONT_SIZE + ATLAS_PAD * 2
+        const c = document.createElement('canvas')
+        c.width = lw * dpr; c.height = lh * dpr
+        const cx2 = c.getContext('2d')
+        cx2.scale(dpr, dpr); cx2.font = FONT
+        cx2.textBaseline = 'top'; cx2.fillStyle = '#fff'
+        cx2.fillText(ch, ATLAS_PAD, ATLAS_PAD)
+        atlas[ch] = { canvas: c, w: lw, h: lh }
+        const bc = document.createElement('canvas')
+        bc.width = lw * dpr; bc.height = lh * dpr
+        const bx2 = bc.getContext('2d')
+        bx2.scale(dpr, dpr); bx2.font = BOLD_FONT
+        bx2.textBaseline = 'top'; bx2.fillStyle = '#fff'
+        bx2.fillText(ch, ATLAS_PAD, ATLAS_PAD)
+        boldAtlas[ch] = { canvas: bc, w: lw, h: lh }
+      }
+    }
+  }
+
+  for (let i = 0; i < N; i++) {
+    let x = px[i], y = py[i]
+    let _vx = vx[i], _vy = vy[i]
+
+    if (falling[i]) {
+      const elapsed = now - fallTime[i]
+      if (elapsed < RECOVER_DELAY) {
+        _vy += GRAVITY
+        if (y > H + 50) {
+          y = -30 - Math.random() * H * 0.5
+          x = ox[i] + (Math.random() - 0.5) * 30
+          _vy = 0.3 + Math.random() * 0.6
+          _vx = (Math.random() - 0.5) * 0.2
+          rotV[i] *= 0.05
+          fallTime[i] = now - RECOVER_DELAY
+        }
+      } else {
+        const dx2 = ox[i] - x, dy2 = oy[i] - y
+        const dist2 = dx2 * dx2 + dy2 * dy2
+        _vx += dx2 * 0.003
+        _vy += dy2 * 0.003
+        _vx *= 0.985
+        _vy *= 0.985
+        rotV[i] *= 0.99
+        if (dist2 < 1 && _vx * _vx + _vy * _vy < 0.01) {
+          x = ox[i]; y = oy[i]; _vx = 0; _vy = 0
+          falling[i] = 0; rot[i] = 0; rotV[i] = 0
+        }
+      }
+    } else {
+      _vx += (ox[i] - x) * 0.1
+      _vy += (oy[i] - y) * 0.1
+      _vx += (Math.random() - 0.5) * 0.3
+      _vy += (Math.random() - 0.5) * 0.3
+      _vx *= 0.85
+      _vy *= 0.85
+
+      const dx = x - mx, dy = y - my
+      const d2 = dx * dx + dy * dy
+      if (d2 < MOUSE_R2 && d2 > 0) {
+        falling[i] = 1; fallTime[i] = now
+        _vx += (Math.random() - 0.5) * 3
+        _vy += Math.random() * 2
+        rotV[i] = (dx > 0 ? 1 : -1) * (Math.random() * 0.3 + 0.1)
+      }
+    }
+
+    _vx *= 0.97; _vy *= 0.97
+    x += _vx; y += _vy
+    px[i] = x; py[i] = y; vx[i] = _vx; vy[i] = _vy
+
+    rot[i] += rotV[i]
+    if (!falling[i]) {
+      rotV[i] += -rot[i] * 0.08
+      rotV[i] *= 0.85
+    }
+
+    if (y < -50 || y > H + 50 || x < -50 || x > W + 50) continue
+
+    const a = ALPHA_LUT[dark[i]]
+    if (a !== lastA) { ctx.globalAlpha = a; lastA = a }
+
+    const at = (bold[i] ? boldAtlas : atlas)[chars[i]]
+    if (!at) continue
+
+    const r = rot[i]
+    if (r > 0.005 || r < -0.005) {
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.rotate(r)
+      ctx.drawImage(at.canvas, 0, 0, at.canvas.width, at.canvas.height,
+                    -ATLAS_PAD, -ATLAS_PAD, at.w, at.h)
+      ctx.restore()
+    } else {
+      ctx.drawImage(at.canvas, 0, 0, at.canvas.width, at.canvas.height,
+                    x - ATLAS_PAD, y - ATLAS_PAD, at.w, at.h)
+    }
+  }
+
+  // ── Ambient floating characters ──
+  if (ambInitialized) {
+    const t = now * 0.001
+    ctx.textBaseline = 'top'
+    ctx.fillStyle = '#fff'
+    for (let i = 0; i < AMBIENT_COUNT; i++) {
+      ambPx[i] += ambVx[i]
+      ambPy[i] += ambVy[i] + Math.sin(t * 0.5 + ambPhase[i]) * 0.08
+      if (ambPx[i] < -20) ambPx[i] = W + 10
+      if (ambPx[i] > W + 20) ambPx[i] = -10
+      if (ambPy[i] < -20) ambPy[i] = H + 10
+      if (ambPy[i] > H + 20) ambPy[i] = -10
+      if (Math.random() < 0.04) {
+        ambChars[i] = KW_STREAM[(Math.random() * KW_STREAM.length) | 0]
+        if (ambChars[i] === ' ') ambChars[i] = '·'
+      }
+      const pulse = 0.7 + 0.3 * Math.sin(t * 0.6 + ambPhase[i] * 3)
+      ctx.globalAlpha = ambAlpha[i] * pulse
+      ctx.font = `${ambSize[i]}px "Courier New"`
+      ctx.fillText(ambChars[i], ambPx[i], ambPy[i])
+    }
+  }
+
+  ctx.globalAlpha = 1
+  requestAnimationFrame(animate)
+}
+
+// ── Events ──────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY })
+canvas.addEventListener('mouseleave', () => { mouseX = -9999; mouseY = -9999 })
+
+canvas.addEventListener('click', e => {
+  const cx = e.clientX, cy = e.clientY, now = performance.now()
+  for (let i = 0; i < N; i++) {
+    falling[i] = 1; fallTime[i] = now
+    const dx = px[i] - cx, dy = py[i] - cy
+    const d = Math.max(1, Math.sqrt(dx * dx + dy * dy))
+    const f = Math.min(25, 800 / d)
+    vx[i] += (dx / d) * f + (Math.random() - 0.5) * 5
+    vy[i] += (dy / d) * f * 0.6 - Math.random() * 3
+    rotV[i] = (dx > 0 ? 1 : -1) * (Math.random() * 0.4 + 0.05)
+  }
+})
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault(); mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY
+}, { passive: false })
+canvas.addEventListener('touchstart', e => {
+  mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY
+  const now = performance.now()
+  for (let i = 0; i < N; i++) {
+    falling[i] = 1; fallTime[i] = now
+    const dx = px[i] - mouseX, dy = py[i] - mouseY
+    const d = Math.max(1, Math.sqrt(dx * dx + dy * dy))
+    const f = Math.min(25, 800 / d)
+    vx[i] += (dx / d) * f + (Math.random() - 0.5) * 5
+    vy[i] += (dy / d) * f * 0.6 - Math.random() * 3
+  }
+})
+canvas.addEventListener('touchend', () => { mouseX = -9999; mouseY = -9999 })
+
+window.addEventListener('resize', () => { generateShape() })
+
+// ── Listen for slide-change explosion from parent page ──
+window.addEventListener('message', (e) => {
+  if (e.data === 'explode') {
+    const now = performance.now()
+    const cx = W * 0.5, cy = H * 0.5
+    for (let i = 0; i < N; i++) {
+      falling[i] = 1; fallTime[i] = now
+      const dx = px[i] - cx, dy = py[i] - cy
+      const d = Math.max(1, Math.sqrt(dx * dx + dy * dy))
+      const f = Math.min(12, 400 / d)
+      vx[i] += (dx / d) * f + (Math.random() - 0.5) * 4
+      vy[i] += (dy / d) * f * 0.5 + (Math.random() - 0.5) * 3
+      rotV[i] = (Math.random() - 0.5) * 0.3
+    }
+  }
+})
+
+// ── Init ────────────────────────────────────────────────
+generateShape()
+</script>
+</body>
+</html>

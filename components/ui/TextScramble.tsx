@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 
 interface TextScrambleProps {
   text: string
@@ -8,6 +8,7 @@ interface TextScrambleProps {
   style?: React.CSSProperties
   delay?: number   // ms before starting
   speed?: number   // ms per character resolve
+  hover?: boolean  // re-scramble on hover
 }
 
 const GLYPHS = '■□▪▫▬▮▯░▒▓█▀▄▌▐─│┌┐└┘├┤┬┴┼'
@@ -18,9 +19,11 @@ export default function TextScramble({
   style,
   delay = 0,
   speed = 30,
+  hover = false,
 }: TextScrambleProps) {
   const [display, setDisplay] = useState('')
   const [started, setStarted] = useState(false)
+  const [triggerCount, setTriggerCount] = useState(0)
   const frameRef = useRef<number>(0)
 
   useEffect(() => {
@@ -28,9 +31,7 @@ export default function TextScramble({
     return () => clearTimeout(timeout)
   }, [delay])
 
-  useEffect(() => {
-    if (!started) return
-
+  const runScramble = useCallback(() => {
     const chars = text.split('')
     const resolved = new Array(chars.length).fill(false)
     let resolvedCount = 0
@@ -40,13 +41,11 @@ export default function TextScramble({
       const elapsed = performance.now() - startTime
       const shouldResolve = Math.floor(elapsed / speed)
 
-      // Resolve characters left to right
       while (resolvedCount < shouldResolve && resolvedCount < chars.length) {
         resolved[resolvedCount] = true
         resolvedCount++
       }
 
-      // Build display string
       const output = chars.map((char, i) => {
         if (resolved[i]) return char
         if (char === ' ') return ' '
@@ -60,11 +59,27 @@ export default function TextScramble({
       }
     }
 
+    cancelAnimationFrame(frameRef.current)
     frameRef.current = requestAnimationFrame(tick)
+  }, [text, speed])
+
+  // Run on mount
+  useEffect(() => {
+    if (!started) return
+    runScramble()
     return () => cancelAnimationFrame(frameRef.current)
-  }, [started, text, speed])
+  }, [started, runScramble])
+
+  // Re-run on hover trigger
+  useEffect(() => {
+    if (triggerCount === 0) return
+    runScramble()
+    return () => cancelAnimationFrame(frameRef.current)
+  }, [triggerCount, runScramble])
+
+  const handleMouseEnter = hover ? () => setTriggerCount((c) => c + 1) : undefined
 
   if (!started) return <span className={className} style={{ ...style, opacity: 0 }}>{text}</span>
 
-  return <span className={className} style={style}>{display}</span>
+  return <span className={className} style={style} onMouseEnter={handleMouseEnter}>{display}</span>
 }

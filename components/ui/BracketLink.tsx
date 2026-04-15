@@ -8,8 +8,10 @@ interface BracketLinkProps {
   children: string
   className?: string
   external?: boolean
-  /** Set true when inside a mix-blend-mode: exclusion parent (e.g., nav) */
+  /** @deprecated legacy blend-mode path — retained for any callers still passing it */
   blended?: boolean
+  /** Explicit foreground color (e.g. nav sets pure '#000' or '#fff' based on current section). */
+  fg?: string
 }
 
 function shuffleString(str: string): string {
@@ -21,7 +23,7 @@ function shuffleString(str: string): string {
   return arr.join('')
 }
 
-export default function BracketLink({ href, children, className = '', external, blended }: BracketLinkProps) {
+export default function BracketLink({ href, children, className = '', external, blended, fg }: BracketLinkProps) {
   const [display, setDisplay] = useState(children)
   const [hovered, setHovered] = useState(false)
   const frameRef = useRef<NodeJS.Timeout>()
@@ -57,15 +59,18 @@ export default function BracketLink({ href, children, className = '', external, 
     setDisplay(children)
   }
 
-  // When inside blend-mode: exclusion, use white bg + black text (blend inverts it to look black bg + white text)
-  // Otherwise use theme vars so it works in both light and dark sections
-  const hoverBg = blended ? '#ffffff' : 'var(--text)'
-  const hoverColor = blended ? '#000000' : 'var(--bg)'
+  // Priority: explicit fg prop (nav crisp-color mode) > blended legacy > theme vars.
+  // When fg is set, invert on hover: fill with fg, text becomes the opposite.
+  const restColor = fg ?? (blended ? 'rgba(255,255,255,0.7)' : 'var(--text)')
+  const hoverBg = fg ?? (blended ? '#ffffff' : 'var(--text)')
+  const hoverColor = fg
+    ? (fg === '#ffffff' || fg.toLowerCase() === '#fff' ? '#000000' : '#ffffff')
+    : (blended ? '#000000' : 'var(--bg)')
 
   const style: React.CSSProperties = {
     backgroundColor: hovered ? hoverBg : 'transparent',
-    color: hovered ? hoverColor : 'var(--text)',
-    transition: 'background-color 0.08s, color 0.08s',
+    color: hovered ? hoverColor : restColor,
+    transition: 'background-color 0.08s, color 0.3s cubic-bezier(0.4,0,0.2,1)',
   }
 
   const inner = (
@@ -78,7 +83,7 @@ export default function BracketLink({ href, children, className = '', external, 
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className={`font-mono text-[14px] font-medium tracking-[0.08em] inline-block cursor-pointer ${className}`}
+        className={`font-mono text-[13px] font-bold tracking-[0.08em] inline-block cursor-pointer ${className}`}
         style={style}
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
@@ -91,7 +96,7 @@ export default function BracketLink({ href, children, className = '', external, 
   return (
     <Link
       href={href}
-      className={`font-mono text-[14px] font-medium tracking-[0.08em] inline-block cursor-pointer ${className}`}
+      className={`font-mono text-[13px] font-bold tracking-[0.08em] inline-block cursor-pointer ${className}`}
       style={style}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}

@@ -60,7 +60,6 @@ function PhoneImage({ src, dim = false }: { src: string; dim?: boolean }) {
         preserveAspectRatio="xMidYMid slice"
         opacity={dim ? 0.5 : 1}
       />
-      <rect x="72" y="13" width="56" height="18" rx="0" fill="rgba(0,0,0,0.85)" />
       <rect x="80" y="384" width="40" height="4" rx="2" fill="var(--bg-4)" opacity="0.5" />
     </svg>
   )
@@ -230,11 +229,72 @@ export default function ImagePlaceholder({
   if (src && !srcOk) { const n = baseName(src); if (n) pending.push(n) }
   if (srcAfter && !afterOk) { const n = baseName(srcAfter); if (n) pending.push(n) }
 
+  // ─── Real-photo mobile: natural-size iPhone frame (matches MobileMediaBlock)
+  if (device === 'mobile' && srcOk) {
+    return (
+      <div className={className}>
+        <div className="flex justify-center">
+          <div style={{
+            maxWidth: '350px',
+            width: '100%',
+            border: '12px solid #000',
+            borderRadius: '60px',
+            overflow: 'hidden',
+            backgroundColor: '#000',
+          }}>
+            <img src={src} alt={label ?? ''} loading="lazy"
+              style={{ width: '100%', height: 'auto', display: 'block' }} />
+          </div>
+        </div>
+        {caption && (
+          <p className="mt-3 text-[13px] leading-relaxed" style={{ color: 'var(--text-3)' }}>
+            {caption}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  // ─── Real-photo split (before/after): two natural-size iPhone frames
+  if (device === 'split' && (srcOk || afterOk)) {
+    const frame: React.CSSProperties = {
+      flex: '1 1 0',
+      maxWidth: '320px',
+      border: '12px solid #000',
+      borderRadius: '60px',
+      overflow: 'hidden',
+      backgroundColor: '#000',
+    }
+    return (
+      <div className={className}>
+        <div className="flex justify-center items-start gap-4">
+          {srcOk && (
+            <div style={frame}>
+              <img src={src} alt={label ?? ''} loading="lazy"
+                style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.5 }} />
+            </div>
+          )}
+          {afterOk ? (
+            <div style={frame}>
+              <img src={srcAfter} alt="" loading="lazy"
+                style={{ width: '100%', height: 'auto', display: 'block' }} />
+            </div>
+          ) : srcOk ? null : null}
+        </div>
+        {caption && (
+          <p className="mt-3 text-[13px] leading-relaxed" style={{ color: 'var(--text-3)' }}>
+            {caption}
+          </p>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className={className}>
       <div
         className={`${aspectMap[aspect]} w-full relative overflow-hidden`}
-        style={{ background: 'var(--bg-2)' }}
+        style={{ background: device === 'mobile' || device === 'split' ? 'transparent' : 'var(--bg-2)' }}
       >
 
         {device === 'none' && (

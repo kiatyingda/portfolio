@@ -27,24 +27,26 @@ canvas#img { display: none; }
 import { prepareWithSegments, layoutWithLines } from 'https://esm.sh/@chenglou/pretext'
 
 // ── Config ──────────────────────────────────────────────
-const FONT_SIZE = 6
-const FONT = `bold ${FONT_SIZE}px "Courier New"`
-const BOLD_FONT = `900 ${FONT_SIZE}px "Courier New"`
-const LINE_HEIGHT = FONT_SIZE + 1
-const MAX_PARTICLES = 15000
+const FONT_SIZE = 5
+const FONT = `${FONT_SIZE}px "Courier New"`
+const BOLD_FONT = `${FONT_SIZE}px "Courier New"`
+const LINE_HEIGHT = FONT_SIZE + 2
+const MAX_PARTICLES = 10000
 const MOUSE_RADIUS = 60
 const MOUSE_R2 = MOUSE_RADIUS * MOUSE_RADIUS
 const GRAVITY = 0.4
-const RECOVER_DELAY = 3000
+const RECOVER_DELAY = 5000
 const ATLAS_PAD = 2
 const KEYWORDS = [
-  'PRODUCT DESIGNER', 'GRAB', 'OKX', 'SINGHEALTH', 'ION ORCHARD',
-  'RIDE-HAILING', 'SOUTHEAST ASIA', 'DESIGN SYSTEM', 'UX RESEARCH',
-  'MULTI-SELECT', 'MARKETPLACE', 'FULFILLMENT', 'STRATEGY', 'MVP',
-  'CONSUMER', 'SCALE', 'INTENT-BASED', 'TRUST', 'TRANSPARENCY',
-  'THE MEATMEN', 'KIAT YINGDA', 'SINGAPORE', '$4B VOLUME', '+239% USERS',
-  '+$1M REVENUE', 'PHASED ROLLOUT', 'USER RESEARCH', 'CONTENT DESIGN',
-  'COMPETITIVE ANALYSIS', 'PRODUCT-MARKET FIT',
+  'CLARITY', 'CRAFT', 'IMPACT', 'KIAT YINGDA', 'SENIOR PRODUCT DESIGNER',
+  'SYSTEMS THINKER', 'BUILDER', 'PRODUCT LOGIC', 'DESIGN QUALITY',
+  'GRAB', 'OKX', '2359 MEDIA', 'SINGHEALTH',
+  'RIDE-HAILING DESIGN LEAD', 'BOOKING FLOW REDESIGN',
+  'SMART MONEY', 'X LAUNCH', 'X STAKE', 'LEADERBOARD',
+  '+$1M REVENUE', '$4B VOLUME', '+239% MEMBERS',
+  'BOOKING FLOW', 'CROSS-SELL', 'ADS PLAYBOOK',
+  'DBS', 'STANDARD CHARTERED', 'F1', 'FOUNDING DESIGNER',
+  'BUSINESS IMPACT', 'SINGAPORE', 'OPEN TO ROLES',
 ]
 const KW_STREAM = (() => {
   let s = ''
@@ -52,14 +54,11 @@ const KW_STREAM = (() => {
   return s
 })()
 
-// ── Pre-computed alpha LUT — tuned for white-on-black ──
-// Steeper curve (0.5) gives more tonal separation on dark backgrounds.
-// Lower floor (0.03) lets shadow areas nearly vanish, creating depth.
+// ── Uniform alpha — all chars same colour ──────────────
+const UNIFORM_ALPHA = 0.4
 const ALPHA_LUT = new Float32Array(256)
 for (let i = 0; i < 256; i++) {
-  const t = i / 255
-  const curved = Math.pow(t, 0.5)
-  ALPHA_LUT[i] = 0.03 + curved * 0.97
+  ALPHA_LUT[i] = i > 0 ? UNIFORM_ALPHA : 0
 }
 
 // ── State (SoA for cache-friendly access) ───────────────
@@ -81,8 +80,8 @@ let charW = FONT_SIZE * 0.6
 let dpr = 1, W = 0, H = 0
 let animating = false
 // ── Ambient floating particles ─────────────────────────
-const AMBIENT_CHARS = ['+', '·', '×', '—', '▸', '■', '*', ':', '/', '\\']
-const AMBIENT_COUNT = 40
+// Ambient uses same keyword stream — proper ASCII text fragments
+const AMBIENT_COUNT = 250
 const ambPx = new Float32Array(AMBIENT_COUNT)
 const ambPy = new Float32Array(AMBIENT_COUNT)
 const ambVx = new Float32Array(AMBIENT_COUNT)
@@ -189,9 +188,9 @@ function processImage(img) {
   const iW = imgCanvas.width
   const iH = imgCanvas.height
 
-  // Wider ellipse to show ears and more facial structure
+  // Wide ellipse — show full head and shoulders
   const ecx = drawW * 0.50, ecy = drawH * 0.48
-  const rxI = 1 / (drawW * 0.52), ryI = 1 / (drawH * 0.62)
+  const rxI = 1 / (drawW * 0.62), ryI = 1 / (drawH * 0.68)
 
   // Cell dimensions for area-average sampling
   const cellW = Math.max(1, Math.round(charW))
@@ -299,11 +298,11 @@ function processImage(img) {
         br *= t * t
       }
 
-      // Left edge fade — portrait dissolves into dark background
+      // Left edge fade — gentle dissolve, not a hard cutoff
       const canvasX = col * charW / W  // 0–1 across canvas
-      if (canvasX < 0.55) {
-        const t = canvasX / 0.55
-        br *= t * t * t  // cubic for deep dissolve
+      if (canvasX < 0.25) {
+        const t = canvasX / 0.25
+        br *= t * t  // quadratic, starts fading only at far left
       }
       // Right edge fade — subtle dissolve
       if (canvasX > 0.92) {
@@ -311,7 +310,7 @@ function processImage(img) {
         br *= t
       }
 
-      if (br < 0.12) continue
+      if (br < 0.15) continue
 
       const si = (row * cols + col) % KW_STREAM.length
       const ch = KW_STREAM[si]
@@ -349,19 +348,19 @@ function processImage(img) {
 
   buildAtlas()
 
-  // ── Initialize ambient floaters ──
+  // ── Initialize ambient floaters — ASCII text scattered everywhere ──
   for (let i = 0; i < AMBIENT_COUNT; i++) {
     ambPx[i] = Math.random() * W
     ambPy[i] = Math.random() * H
-    // Very slow drift — different speeds and directions
     const angle = Math.random() * Math.PI * 2
-    const speed = 0.1 + Math.random() * 0.3
+    const speed = 0.08 + Math.random() * 0.25
     ambVx[i] = Math.cos(angle) * speed
     ambVy[i] = Math.sin(angle) * speed
     ambPhase[i] = Math.random() * Math.PI * 2
-    ambAlpha[i] = 0.06 + Math.random() * 0.14  // 6-20% opacity
-    ambSize[i] = 7 + Math.random() * 5          // 7-12px
-    ambChars[i] = AMBIENT_CHARS[(Math.random() * AMBIENT_CHARS.length) | 0]
+    ambAlpha[i] = 0.05 + Math.random() * 0.12  // 5-17% — lighter
+    ambSize[i] = 4 + Math.random() * 3          // 4-7px
+    ambChars[i] = KW_STREAM[(Math.random() * KW_STREAM.length) | 0]
+    if (ambChars[i] === ' ') ambChars[i] = '·'
   }
   ambInitialized = true
 
@@ -382,6 +381,36 @@ function animate(timestamp) {
   const now = performance.now()
   const mx = mouseX, my = mouseY
   let lastA = -1
+
+  // ── Flicker: randomly swap ~3% of characters each frame ──
+  const flickerCount = Math.max(1, (N * 0.03) | 0)
+  for (let f = 0; f < flickerCount; f++) {
+    const ri = (Math.random() * N) | 0
+    const si = (Math.random() * KW_STREAM.length) | 0
+    const ch = KW_STREAM[si]
+    if (ch !== ' ') {
+      chars[ri] = ch
+      // Rebuild atlas entry if new char
+      if (!atlas[ch]) {
+        const lw = Math.ceil(charW) + ATLAS_PAD * 2
+        const lh = FONT_SIZE + ATLAS_PAD * 2
+        const c = document.createElement('canvas')
+        c.width = lw * dpr; c.height = lh * dpr
+        const cx2 = c.getContext('2d')
+        cx2.scale(dpr, dpr); cx2.font = FONT
+        cx2.textBaseline = 'top'; cx2.fillStyle = '#fff'
+        cx2.fillText(ch, ATLAS_PAD, ATLAS_PAD)
+        atlas[ch] = { canvas: c, w: lw, h: lh }
+        const bc = document.createElement('canvas')
+        bc.width = lw * dpr; bc.height = lh * dpr
+        const bx2 = bc.getContext('2d')
+        bx2.scale(dpr, dpr); bx2.font = BOLD_FONT
+        bx2.textBaseline = 'top'; bx2.fillStyle = '#fff'
+        bx2.fillText(ch, ATLAS_PAD, ATLAS_PAD)
+        boldAtlas[ch] = { canvas: bc, w: lw, h: lh }
+      }
+    }
+  }
 
   for (let i = 0; i < N; i++) {
     let x = px[i], y = py[i]
@@ -404,21 +433,21 @@ function animate(timestamp) {
           fallTime[i] = now - RECOVER_DELAY  // enter recovery
         }
       } else {
-        // Phase 2: Gentle drift toward home — no spring, no bounce
+        // Phase 2: Very slow drift back — cinematic reassembly
         const dx2 = ox[i] - x, dy2 = oy[i] - y
         const dist2 = dx2 * dx2 + dy2 * dy2
 
-        // Soft constant pull, no oscillation
-        _vx += dx2 * 0.008
-        _vy += dy2 * 0.008
-        _vx *= 0.96
-        _vy *= 0.96
+        // Very gentle pull — takes several seconds to reassemble
+        _vx += dx2 * 0.003
+        _vy += dy2 * 0.003
+        _vx *= 0.985
+        _vy *= 0.985
 
-        // Gradually kill rotation
-        rotV[i] *= 0.97
+        // Slowly kill rotation
+        rotV[i] *= 0.99
 
         // Settle when very close and slow
-        if (dist2 < 1 && _vx * _vx + _vy * _vy < 0.02) {
+        if (dist2 < 1 && _vx * _vx + _vy * _vy < 0.01) {
           x = ox[i]; y = oy[i]; _vx = 0; _vy = 0
           falling[i] = 0
           rot[i] = 0; rotV[i] = 0
@@ -427,6 +456,9 @@ function animate(timestamp) {
     } else {
       _vx += (ox[i] - x) * 0.1
       _vy += (oy[i] - y) * 0.1
+      // Subtle jitter — particles breathe in place
+      _vx += (Math.random() - 0.5) * 0.3
+      _vy += (Math.random() - 0.5) * 0.3
       _vx *= 0.85
       _vy *= 0.85
 
@@ -475,27 +507,30 @@ function animate(timestamp) {
     }
   }
 
-  // ── Ambient floating characters ──
+  // ── Ambient floating characters — scattered across full canvas ──
   if (ambInitialized) {
-    const t = now * 0.001  // seconds
-    ctx.font = FONT
+    const t = now * 0.001
     ctx.textBaseline = 'top'
+    ctx.fillStyle = '#fff'
     for (let i = 0; i < AMBIENT_COUNT; i++) {
-      // Update position — slow drift + gentle sine wave
       ambPx[i] += ambVx[i]
-      ambPy[i] += ambVy[i] + Math.sin(t * 0.5 + ambPhase[i]) * 0.15
+      ambPy[i] += ambVy[i] + Math.sin(t * 0.5 + ambPhase[i]) * 0.1
 
-      // Wrap around edges with margin
       if (ambPx[i] < -20) ambPx[i] = W + 10
       if (ambPx[i] > W + 20) ambPx[i] = -10
       if (ambPy[i] < -20) ambPy[i] = H + 10
       if (ambPy[i] > H + 20) ambPy[i] = -10
 
-      // Pulse opacity gently
-      const pulse = 0.7 + 0.3 * Math.sin(t * 0.8 + ambPhase[i] * 2)
+      // Flicker — swap character frequently for living texture
+      if (Math.random() < 0.06) {
+        ambChars[i] = KW_STREAM[(Math.random() * KW_STREAM.length) | 0]
+        if (ambChars[i] === ' ') ambChars[i] = '·'
+      }
+
+      // Pulse opacity — gentle throb, never fully invisible
+      const pulse = 0.7 + 0.3 * Math.sin(t * 0.6 + ambPhase[i] * 3)
       ctx.globalAlpha = ambAlpha[i] * pulse
       ctx.font = `${ambSize[i]}px "Courier New"`
-      ctx.fillStyle = '#fff'
       ctx.fillText(ambChars[i], ambPx[i], ambPy[i])
     }
   }
@@ -542,6 +577,23 @@ window.addEventListener('resize', () => {
   if (N > 0) {
     const t = new Image(); t.src = imgCanvas.toDataURL(); t.onload = () => processImage(t)
   } else setupCanvas()
+})
+
+// ── Listen for slide-change explosion from parent page ──
+window.addEventListener('message', (e) => {
+  if (e.data === 'explode') {
+    const now = performance.now()
+    const cx = W * 0.5, cy = H * 0.5
+    for (let i = 0; i < N; i++) {
+      falling[i] = 1; fallTime[i] = now
+      const dx = px[i] - cx, dy = py[i] - cy
+      const d = Math.max(1, Math.sqrt(dx * dx + dy * dy))
+      const f = Math.min(12, 400 / d)
+      vx[i] += (dx / d) * f + (Math.random() - 0.5) * 4
+      vy[i] += (dy / d) * f * 0.5 + (Math.random() - 0.5) * 3
+      rotV[i] = (Math.random() - 0.5) * 0.3
+    }
+  }
 })
 
 // ── Init ────────────────────────────────────────────────

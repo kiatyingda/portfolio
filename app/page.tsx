@@ -4,10 +4,12 @@ import About from '@/components/sections/About'
 import Timeline from '@/components/sections/Timeline'
 import Footer from '@/components/sections/Footer'
 import SlideKeyboardNav from '@/components/ui/SlideKeyboardNav'
+import BackgroundCrossfade from '@/components/ui/BackgroundCrossfade'
 
 export default function Home() {
   return (
     <div className="relative overflow-x-hidden">
+      <BackgroundCrossfade />
       <SlideKeyboardNav />
       <Hero />
       <Timeline />

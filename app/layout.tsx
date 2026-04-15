@@ -1,21 +1,23 @@
 import type { Metadata } from 'next'
-import { Inter_Tight, IBM_Plex_Mono } from 'next/font/google'
+import { Space_Mono, Inter } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
+import PresentationCursor from '@/components/ui/PresentationCursor'
 
-// Inter Tight — geometric sans for all text (thin weights for display, regular for body)
-const interTight = Inter_Tight({
+// Space Mono — monospace for EVERYTHING (carlesfaus.com uses PP Supply Mono)
+// The entire site is monospace — that's what creates the architectural feel
+const spaceMono = Space_Mono({
   subsets: ['latin'],
-  variable: '--font-display',
-  weight: ['100', '200', '300', '400', '500', '600', '700'],
+  variable: '--font-mono',
+  weight: ['400', '700'],
   display: 'swap',
 })
 
-// IBM Plex Mono — labels, metadata, structural elements
-const ibmPlexMono = IBM_Plex_Mono({
+// Heavy sans for the footer wordmark — Aino uses a massive tight-tracked sans
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-mono',
-  weight: ['300', '400'],
+  variable: '--font-sans',
+  weight: ['900'],
   display: 'swap',
 })
 
@@ -33,10 +35,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${interTight.variable} ${ibmPlexMono.variable}`}>
-      <body className="bg-th-bg text-th-text antialiased font-display">
+    <html lang="en" className={`${spaceMono.variable} ${inter.variable}`}>
+      <body className="bg-th-bg text-th-text antialiased font-mono">
         <Nav />
         <main>{children}</main>
+        <PresentationCursor />
       </body>
     </html>
   )

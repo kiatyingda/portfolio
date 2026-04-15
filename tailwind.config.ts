@@ -9,8 +9,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ['var(--font-display)', 'system-ui', 'Helvetica Neue', 'sans-serif'],
-        sans: ['var(--font-display)', 'system-ui', 'Helvetica Neue', 'sans-serif'],
+        // Everything is monospace — carlesfaus.com style
+        display: ['var(--font-mono)', 'ui-monospace', 'SF Mono', 'Menlo', 'monospace'],
+        sans: ['var(--font-mono)', 'ui-monospace', 'SF Mono', 'Menlo', 'monospace'],
         mono: ['var(--font-mono)', 'ui-monospace', 'SF Mono', 'Menlo', 'monospace'],
       },
       colors: {

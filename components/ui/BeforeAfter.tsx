@@ -1,14 +1,19 @@
 'use client'
 
 import { useRef, useState, useCallback, useEffect } from 'react'
+// Note: divider tracks the pointer on hover — no click/drag required.
 
 interface BeforeAfterProps {
   before: string
   after: string
   beforeLabel?: string
   afterLabel?: string
-  device?: 'ipad' | 'none'
+  device?: 'ipad' | 'phone' | 'none'
   className?: string
+  /** Force a fixed aspect ratio on the frame (e.g. '16/10', '1/1'). */
+  aspectRatio?: string
+  /** How images fit inside the frame when aspectRatio is set. 'cover' crops; 'contain' letterboxes. Default: 'cover'. */
+  fit?: 'cover' | 'contain'
 }
 
 // Skew angle in degrees — how much the divider leans
@@ -21,10 +26,11 @@ export default function BeforeAfter({
   afterLabel = 'After',
   device = 'none',
   className = '',
+  aspectRatio,
+  fit = 'cover',
 }: BeforeAfterProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState(50)
-  const [dragging, setDragging] = useState(false)
   const [beforeLoaded, setBeforeLoaded] = useState(false)
   const [afterLoaded, setAfterLoaded] = useState(false)
 
@@ -32,24 +38,13 @@ export default function BeforeAfter({
     const el = containerRef.current
     if (!el) return
     const rect = el.getBoundingClientRect()
-    const x = Math.max(4, Math.min(clientX - rect.left, rect.width - 4))
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width))
     setPos((x / rect.width) * 100)
   }, [])
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    setDragging(true)
-    updatePos(e.clientX)
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-  }, [updatePos])
-
   const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragging) return
     updatePos(e.clientX)
-  }, [dragging, updatePos])
-
-  const onPointerUp = useCallback(() => {
-    setDragging(false)
-  }, [])
+  }, [updatePos])
 
   // Preload images
   useEffect(() => {
@@ -61,26 +56,30 @@ export default function BeforeAfter({
   // tan(8°) ≈ 0.1405 — the horizontal offset as fraction of height
   const skewOffset = Math.tan((SKEW * Math.PI) / 180) * 100 // in % of height
   const beforeClip = `polygon(0 0, calc(${pos}% + ${skewOffset / 2}vh) 0, calc(${pos}% - ${skewOffset / 2}vh) 100%, 0 100%)`
+  const afterClip = `polygon(calc(${pos}% + ${skewOffset / 2}vh) 0, 100% 0, 100% 100%, calc(${pos}% - ${skewOffset / 2}vh) 100%)`
 
   const content = (
     <div
       ref={containerRef}
       className={`relative w-full select-none overflow-hidden ${device === 'none' ? 'rounded-[4px]' : ''}`}
-      style={{ cursor: dragging ? 'grabbing' : 'ew-resize' }}
-      onPointerDown={onPointerDown}
+      style={{ cursor: 'ew-resize' }}
       onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
     >
       {/* After image (full, background) */}
-      <div className="relative w-full">
+      <div className="relative w-full" style={aspectRatio ? { aspectRatio } : undefined}>
         {afterLoaded ? (
-          <img src={after} alt={afterLabel} className="w-full block" draggable={false} />
+          <img
+            src={after}
+            alt={afterLabel}
+            className={aspectRatio ? `absolute inset-0 w-full h-full block ${fit === 'contain' ? 'object-contain' : 'object-cover'}` : 'w-full block'}
+            draggable={false}
+          />
         ) : (
           <div className="w-full aspect-[4/3] bg-th-bg3" />
         )}
       </div>
 
-      {/* Before image (slanted clip) */}
+      {/* Before image (slanted clip) — includes before label so it masks with the divider */}
       <div
         className="absolute inset-0"
         style={{ clipPath: beforeClip }}
@@ -89,12 +88,29 @@ export default function BeforeAfter({
           <img
             src={before}
             alt={beforeLabel}
-            className="absolute inset-0 w-full h-full object-cover"
+            className={`absolute inset-0 w-full h-full ${fit === 'contain' ? 'object-contain' : 'object-cover'}`}
             draggable={false}
           />
         ) : (
           <div className="w-full h-full bg-th-bg2" />
         )}
+        <div className="absolute top-4 left-4 z-10">
+          <span className="font-mono text-[9px] tracking-[0.12em] uppercase px-2 py-1 bg-black/50 text-white">
+            {beforeLabel}
+          </span>
+        </div>
+      </div>
+
+      {/* After-side label (inverse clip) — masks when divider sweeps over it */}
+      <div
+        className="absolute inset-0 pointer-events-none z-10"
+        style={{ clipPath: afterClip }}
+      >
+        <div className="absolute top-4 right-4">
+          <span className="font-mono text-[9px] tracking-[0.12em] uppercase px-2 py-1 bg-black text-white">
+            {afterLabel}
+          </span>
+        </div>
       </div>
 
       {/* Slanted divider line */}
@@ -107,7 +123,7 @@ export default function BeforeAfter({
         }}
       >
         <div
-          className="h-full bg-white/80"
+          className="h-full bg-black"
           style={{
             transform: `skewX(-${SKEW}deg)`,
             transformOrigin: 'center center',
@@ -132,19 +148,26 @@ export default function BeforeAfter({
         </div>
       </div>
 
-      {/* Labels */}
-      <div className="absolute top-4 left-4 z-10">
-        <span className="font-mono text-[9px] tracking-[0.12em] uppercase px-3 py-1.5 bg-black/60 text-white/70">
-          {beforeLabel}
-        </span>
-      </div>
-      <div className="absolute top-4 right-4 z-10">
-        <span className="font-mono text-[9px] tracking-[0.12em] uppercase px-3 py-1.5 bg-black/60 text-white/70">
-          {afterLabel}
-        </span>
-      </div>
     </div>
   )
+
+  if (device === 'phone') {
+    return (
+      <div className={className}>
+        <div
+          className="mx-auto"
+          style={{
+            border: '12px solid #000',
+            borderRadius: '60px',
+            overflow: 'hidden',
+            backgroundColor: '#000',
+          }}
+        >
+          {content}
+        </div>
+      </div>
+    )
+  }
 
   if (device === 'ipad') {
     return (

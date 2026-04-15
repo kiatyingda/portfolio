@@ -1,62 +1,95 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { MiniPhoneSketch } from '@/components/ui/ImagePlaceholder'
-import ConceptLightbox from '@/components/ui/ConceptLightbox'
 
 interface ConceptItem {
   title: string
   body: string
   status?: 'winner' | 'tested' | ''
   image?: string
+  video?: string
 }
 
 interface ConceptGridProps {
   items: ConceptItem[]
 }
 
-export default function ConceptGrid({ items }: ConceptGridProps) {
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+function ConceptCard({ item }: { item: ConceptItem }) {
+  const [hovered, setHovered] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  const handleEnter = () => {
+    setHovered(true)
+    videoRef.current?.play()
+  }
+  const handleLeave = () => {
+    setHovered(false)
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+    }
+  }
 
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">
-        {items.map((item, i) => (
-          <button
-            key={i}
-            onClick={() => setLightboxIndex(i)}
-            className="p-6 border border-th-border relative text-left group hover:bg-th-bg2 transition-colors duration-200 cursor-pointer"
-          >
-            {item.status && (
-              <span className={`font-mono text-[9px] tracking-[0.1em] absolute top-6 right-6 px-3 py-1 ${
-                item.status === 'winner' ? 'bg-th-text text-th-bg' : 'border border-th-border text-th-text'
-              }`}>
-                {item.status === 'winner' ? 'Shipped' : 'Tested'}
-              </span>
+    <div
+      className="p-6 border border-th-border relative text-left group hover:bg-th-bg2 transition-colors duration-200"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+    >
+      <div className="mb-4 flex justify-center">
+        {(item.video || item.image) ? (
+          <div style={{
+            maxWidth: '200px',
+            border: '12px solid #000',
+            borderRadius: '30px',
+            overflow: 'hidden',
+            backgroundColor: '#000',
+          }}>
+            {item.video ? (
+              <video
+                ref={videoRef}
+                src={item.video}
+                loop
+                muted
+                playsInline
+                className="transition-opacity duration-300"
+                style={{ width: '100%', height: 'auto', display: 'block', opacity: hovered ? 1 : 0.35 }}
+              />
+            ) : (
+              <img
+                src={item.image}
+                alt={item.title}
+                className="transition-opacity duration-300"
+                style={{ width: '100%', height: 'auto', display: 'block', opacity: hovered ? 1 : 0.35 }}
+              />
             )}
-            <div className="mb-4 flex justify-center">
-              {item.image ? (
-                <div className="w-[120px] h-[220px] overflow-hidden">
-                  <img src={item.image} alt={item.title} className="w-full h-full object-cover object-top opacity-80 group-hover:opacity-100 transition-opacity duration-200" />
-                </div>
-              ) : (
-                <MiniPhoneSketch />
-              )}
-            </div>
-            <p className="font-display text-[14px] font-semibold text-th-text tracking-[0.03em] mb-2">{item.title}</p>
-            <p className="font-display text-[13px] font-semibold leading-[1.6] text-th-text2 tracking-[0.02em]">{item.body}</p>
-          </button>
-        ))}
+          </div>
+        ) : (
+          <MiniPhoneSketch />
+        )}
       </div>
+      <div className="flex items-center gap-2 mb-2">
+        <p className="font-mono text-[11px] tracking-[0.08em] uppercase" style={{ color: 'var(--text)' }}>{item.title}</p>
+        {item.status && (
+          <span className={`font-mono text-[9px] tracking-[0.1em] px-2 py-0.5 ${
+            item.status === 'winner' ? 'bg-th-text text-th-bg' : 'border border-th-border text-th-text'
+          }`}>
+            {item.status === 'winner' ? 'Shipped' : 'Tested'}
+          </span>
+        )}
+      </div>
+      <p className="font-display text-[13px] font-normal leading-[1.6] tracking-[0.02em]" style={{ color: 'var(--text-3)' }}>{item.body}</p>
+    </div>
+  )
+}
 
-      {lightboxIndex !== null && (
-        <ConceptLightbox
-          items={items}
-          activeIndex={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          onNavigate={(i) => setLightboxIndex(i)}
-        />
-      )}
-    </>
+export default function ConceptGrid({ items }: ConceptGridProps) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">
+      {items.map((item, i) => (
+        <ConceptCard key={i} item={item} />
+      ))}
+    </div>
   )
 }

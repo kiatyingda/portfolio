@@ -7,7 +7,6 @@ import FadeIn from '@/components/ui/FadeIn'
 import ConceptGrid from '@/components/sections/ConceptGrid'
 import FluidType from '@/components/ui/FluidType'
 import BeforeAfter from '@/components/ui/BeforeAfter'
-import ProjectSideNav from '@/components/ui/ProjectSideNav'
 import BracketLink from '@/components/ui/BracketLink'
 import SlideKeyboardNav from '@/components/ui/SlideKeyboardNav'
 
@@ -22,291 +21,474 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: `${project.title} — Kiat Yingda`, description: project.summary }
 }
 
-// ─── Shared primitives — Apple keynote style ────────────────────
+// ─── Editorial primitives — Aino Gulled style ───────────────────
+// Pure black text, minimal grey only for labels, warm off-white bg
+
 function SLabel({ label }: { label?: string }) {
   if (!label) return null
-  return <p className="font-mono text-[11px] font-medium tracking-[0.14em] mb-8" style={{ color: 'var(--text-3)' }}>[ {label} ]</p>
+  return <p className="mb-8"><span className="font-mono text-[12px] font-bold tracking-[0.12em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ {label} ]</span></p>
 }
 
-function SHeading({ heading, large }: { heading?: string; large?: boolean }) {
+function SMega({ text }: { text: string }) {
+  return (
+    <p className="font-display font-normal text-[22px] md:text-[30px] lg:text-[36px] leading-[1.3] tracking-[0.01em] max-w-[780px]"
+      style={{ color: 'var(--text)' }}>{text}</p>
+  )
+}
+
+function SHeading({ heading }: { heading?: string }) {
   if (!heading) return null
-  const cls = large
-    ? 'font-display font-medium text-[36px] md:text-[56px] lg:text-[64px] leading-[1.06] mb-10 max-w-[900px]'
-    : 'font-display font-medium text-[30px] md:text-[44px] lg:text-[52px] leading-[1.08] mb-8 max-w-[820px]'
-  return <h2 className={cls} style={{ letterSpacing: '0.005em', color: 'var(--text)' }}>{heading}</h2>
+  return <h2 className="font-mono text-[11px] tracking-[0.12em] mb-4" style={{ color: 'var(--text-3)' }}>{heading}</h2>
 }
 
 function SBody({ body }: { body?: string | string[] }) {
   if (!body) return null
   const paras = Array.isArray(body) ? body : [body]
   return (
-    <div className="max-w-[580px]">
+    <div className="max-w-[520px]">
       {paras.map((p, i) => (
-        <p key={i} className="font-display text-[15px] md:text-[16px] font-normal leading-[1.7] tracking-[0.02em] mb-5 last:mb-0" style={{ color: 'var(--text-2)' }}>{p}</p>
+        <p key={i} className="font-display text-[14px] md:text-[15px] font-normal leading-[1.75] tracking-[0.015em] mb-5 last:mb-0" style={{ color: 'var(--text)' }}>{p}</p>
       ))}
     </div>
   )
 }
 
-// ─── Slide wrapper — every section is a full-viewport slide ─────
-function Slide({ dark, children, className = '' }: { dark?: boolean; children: React.ReactNode; className?: string }) {
+// ── Placeholder image — stands in for real screenshots ──────────
+function PlaceholderImg({ label, aspect = '16/10', span = 'full' }: { label?: string; aspect?: string; span?: 'full' | 'w4' | 'w2' }) {
   return (
-    <FadeIn>
-      <div className={`min-h-screen flex items-center ${dark ? 'section-dark grain relative' : ''} ${className}`}
-        style={{ backgroundColor: 'var(--bg)' }}>
-        <div className="max-w-[1136px] mx-auto w-full px-8 md:px-16 py-24 md:py-32 relative z-10">
-          {children}
-        </div>
-      </div>
-    </FadeIn>
-  )
-}
-
-// ─── Section types ───────────────────────────────────────────────
-
-function TextSection({ s }: { s: CaseStudySection & { type: 'text' } }) {
-  return (
-    <Slide dark={s.bg === 'dark'}>
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-16 md:gap-24">
-        <div>
-          <SLabel label={s.label} />
-          <SHeading heading={s.heading} large />
-        </div>
-        <div className="flex flex-col justify-end">
-          <SBody body={s.body} />
-        </div>
-      </div>
-    </Slide>
-  )
-}
-
-function TwoColSection({ s }: { s: CaseStudySection & { type: 'twocol' } }) {
-  return (
-    <Slide dark={s.bg === 'dark'}>
-      <SLabel label={s.label} />
-      <SHeading heading={s.heading} large />
-      {s.left && s.right && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mt-16">
-          {[s.left, s.right].map((col, i) => (
-            <div key={i}>
-              <p className="font-mono text-[10px] tracking-[0.14em] mb-5" style={{ color: 'var(--text-3)' }}>{col.heading}</p>
-              <p className="font-display text-[16px] font-normal leading-[1.7] tracking-[0.02em] max-w-[460px]" style={{ color: 'var(--text-2)' }}>{col.body}</p>
-            </div>
-          ))}
-        </div>
+    <div className="w-full relative" style={{ aspectRatio: aspect, backgroundColor: 'var(--bg-2)' }}>
+      {label && (
+        <span className="absolute bottom-3 left-4 font-mono text-[9px] tracking-[0.12em]" style={{ color: 'var(--text-3)' }}>{label}</span>
       )}
-    </Slide>
+    </div>
+  )
+}
+
+// ── Media block — renders real image, video, or placeholder ─────
+function MediaBlock({ image, video, label, aspect = '16/10', maxHeight, natural }: { image?: string; video?: string; label?: string; aspect?: string; maxHeight?: string; natural?: boolean }) {
+  if (video) {
+    return (
+      <div className="flex justify-center">
+        <video src={video} autoPlay loop muted playsInline className="w-full h-auto" style={{ backgroundColor: 'var(--bg-2)', maxHeight: maxHeight || '70vh' }} />
+      </div>
+    )
+  }
+  if (image) {
+    // `natural` — render at intrinsic pixel dimensions, capped only by container width.
+    const imgStyle: React.CSSProperties = natural
+      ? { backgroundColor: 'var(--bg-2)', width: 'auto', height: 'auto', maxWidth: '100%' }
+      : { backgroundColor: 'var(--bg-2)', maxHeight: maxHeight || '70vh', width: 'auto', maxWidth: '100%' }
+    return (
+      <div className="flex justify-center">
+        <img src={image} alt={label || ''} className="h-auto" style={imgStyle} loading="lazy" />
+      </div>
+    )
+  }
+  return <PlaceholderImg label={label} aspect={aspect} />
+}
+
+// ── Mobile media — black border, rounded, native aspect ratio ───
+function MobileMediaBlock({ image, video }: { image?: string; video?: string }) {
+  return (
+    <div className="flex justify-center">
+      <div style={{
+        maxWidth: '350px',
+        border: '12px solid #000',
+        borderRadius: '60px',
+        overflow: 'hidden',
+        backgroundColor: '#000',
+      }}>
+        {video ? (
+          <video src={video} autoPlay loop muted playsInline
+            style={{ width: '100%', height: 'auto', display: 'block' }} />
+        ) : image ? (
+          <img src={image} alt="" loading="lazy"
+            style={{ width: '100%', height: 'auto', display: 'block' }} />
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+const sp = (n: number) => `${n * 1.5}rem`
+
+// Gap between sections — 'tight' cuddles to previous (same thought), 'wide' pauses (new thought).
+// Sized for breathing room without creating empty voids on short sections.
+const gapTop = (gap?: 'tight' | 'standard' | 'wide') => {
+  if (gap === 'tight') return sp(2)
+  if (gap === 'wide') return sp(18)
+  return sp(10)
+}
+
+// ─── Section renderers — story flow with imagery ────────────────
+
+function TextSection({ s, index }: { s: CaseStudySection & { type: 'text' }; index: number }) {
+  // Alternate layout: even = heading left + body right, odd = full-width heading then body below
+  const isEven = index % 2 === 0
+  return (
+    <>
+      <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+        {isEven ? (
+          <div className="aino-inner">
+            <div className="col-span-6 md:col-span-4">
+              {s.heading && <SMega text={s.heading} />}
+            </div>
+            {s.body && (
+              <div className="col-span-6 md:col-span-2 mt-6 md:mt-0">
+                {s.label && <SHeading heading={s.label} />}
+                <SBody body={s.body} />
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="aino-inner">
+              <div className="col-span-6">
+                {s.heading && <SMega text={s.heading} />}
+              </div>
+            </div>
+            {s.body && (
+              <div className="aino-inner" style={{ marginTop: sp(2) }}>
+                <div className="hidden md:block md:col-span-2" />
+                <div className="col-span-6 md:col-span-3">
+                  {s.label && <SHeading heading={s.label} />}
+                  <SBody body={s.body} />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+      {/* Visual break — only render when there's media */}
+      {(s.image || s.video || s.imageHint) && (
+        <section className="aino-section" style={{ marginTop: sp(4) }}>
+          <div className="aino-inner-wide">
+            {s.device === 'mobile' ? (
+              <MobileMediaBlock image={s.image} video={s.video} />
+            ) : (
+              <MediaBlock image={s.image} video={s.video} label={s.imageHint || s.heading || s.label} natural={s.imageNatural} />
+            )}
+          </div>
+        </section>
+      )}
+    </>
+  )
+}
+
+function TwoColSection({ s, index }: { s: CaseStudySection & { type: 'twocol' }; index: number }) {
+  return (
+    <>
+      <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+        {s.heading && (
+          <div className="aino-inner">
+            <div className="col-span-6">
+              <SMega text={s.heading} />
+            </div>
+          </div>
+        )}
+        {s.left && s.right && (
+          <div className="aino-inner" style={{ marginTop: sp(2) }}>
+            {[s.left, s.right].map((col, i) => (
+              <div key={i} className="col-span-6 md:col-span-3">
+                <SHeading heading={col.heading} />
+                <p className="font-display text-[14px] md:text-[15px] font-normal leading-[1.75] tracking-[0.015em] max-w-[460px]" style={{ color: 'var(--text)' }}>{col.body}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+      {/* Image after two-col text — only render when there's media */}
+      {(s.image || s.video || s.imageHint || s.imageHintLeft) && (
+        <section className="aino-section" style={{ marginTop: sp(4) }}>
+          {s.device === 'mobile' ? (
+            <div className="aino-inner-wide">
+              <MobileMediaBlock image={s.image} video={s.video} />
+            </div>
+          ) : (
+            <div className="aino-inner-wide">
+              <MediaBlock image={s.image} video={s.video} label={s.heading} />
+            </div>
+          )}
+        </section>
+      )}
+    </>
   )
 }
 
 function StatsSection({ s }: { s: CaseStudySection & { type: 'stats' } }) {
   return (
-    <Slide dark>
-      <SLabel label={s.label} />
-      {s.stats && (
-        <div className="mb-16">
-          {s.stats.map((stat, i) => (
-            <div key={i} className={i > 0 ? 'mt-12' : ''}>
-              <p className="font-display font-medium text-[72px] md:text-[100px] lg:text-[120px] leading-none mb-4"
-                style={{ letterSpacing: '-0.02em', color: 'var(--text)' }}>{stat.value}</p>
-              <p className="font-display text-[15px] font-normal tracking-[0.04em] max-w-[320px]" style={{ color: 'var(--text-2)' }}>{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      )}
-      {s.insight && (
-        <p className="font-display text-[20px] md:text-[24px] font-light leading-[1.4] tracking-[0.01em] max-w-[680px]" style={{ color: 'var(--text-2)' }}>{s.insight}</p>
-      )}
-    </Slide>
+    <section className="aino-section" style={{ marginTop: gapTop(s.gap), paddingTop: sp(4), paddingBottom: sp(4) }}>
+      <div className="aino-inner">
+        {s.stats && s.stats.map((stat, i) => (
+          <div key={i} className="col-span-3 md:col-span-3 mb-6 last:mb-0">
+            <p className="font-display font-medium text-[48px] md:text-[64px] lg:text-[80px] leading-none mb-2"
+              style={{ letterSpacing: '-0.02em', color: 'var(--text)' }}>{stat.value}</p>
+            <p className="font-display text-[13px] font-normal tracking-[0.02em] max-w-[280px]" style={{ color: 'var(--text)' }}>{stat.label}</p>
+          </div>
+        ))}
+        {s.insight && (
+          <div className="col-span-6" style={{ marginTop: sp(2) }}>
+            <SMega text={s.insight} />
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
 function ColumnsSection({ s }: { s: CaseStudySection & { type: 'columns' } }) {
   return (
-    <Slide dark={s.bg === 'dark'}>
-      <SLabel label={s.label} />
-      <SHeading heading={s.heading} />
-      {s.columns && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16 mt-16">
-          {s.columns.map((col, i) => (
-            <div key={i}>
-              <p className="font-mono text-[10px] tracking-[0.14em] mb-5" style={{ color: 'var(--text-3)' }}>{col.heading}</p>
-              <p className="font-display text-[15px] font-normal leading-[1.7] tracking-[0.02em]" style={{ color: 'var(--text-2)' }}>{col.body}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </Slide>
+    <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+      <div className="aino-inner">
+        {s.heading && <div className="col-span-6 mb-6"><SHeading heading={s.heading} /></div>}
+        {s.columns && s.columns.map((col, i) => (
+          <div key={i} className="col-span-6 md:col-span-2">
+            <SHeading heading={col.heading} />
+            <p className="font-display text-[14px] md:text-[15px] font-normal leading-[1.75] tracking-[0.015em]" style={{ color: 'var(--text)' }}>{col.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
 function GridSection({ s }: { s: CaseStudySection & { type: 'grid' } }) {
   return (
-    <Slide dark={s.bg === 'dark'}>
-      <SLabel label={s.label} />
-      <SHeading heading={s.heading} />
-      {s.items && <ConceptGrid items={s.items} />}
-    </Slide>
+    <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+      <div className="aino-inner">
+        {s.label && <div className="col-span-6"><SLabel label={s.label} /></div>}
+        {s.heading && <div className="col-span-6 mb-4"><SMega text={s.heading} /></div>}
+        <div className="col-span-6">
+          {s.items && <ConceptGrid items={s.items} />}
+        </div>
+      </div>
+    </section>
   )
 }
 
 function QuotesSection({ s }: { s: CaseStudySection & { type: 'quotes' } }) {
+  if (!s.quotes) return null
+  // Staggered editorial pull quotes — alternating indent, display-scale type, no dividers.
+  // Pattern: quote 1 left-aligned, quote 2 indented right, quote 3 left-aligned again.
+  // Each quote is its own <section> so keyboard-nav (SlideKeyboardNav) steps through them one at a time.
   return (
-    <Slide dark={s.bg === 'dark'}>
-      <SLabel label={s.label} />
-      <SHeading heading={s.heading} />
-      {s.quotes && (
-        <div className="mt-12 space-y-0">
-          {s.quotes.map((q, i) => (
-            <div key={i} className={`py-10 ${i > 0 ? 'border-t' : ''}`} style={{ borderColor: 'var(--border)' }}>
-              <p className="font-display text-[20px] md:text-[26px] font-light leading-[1.35] max-w-[720px] mb-5"
-                style={{ letterSpacing: '0.005em', color: 'var(--text)' }}>&ldquo;{q.text}&rdquo;</p>
-              <p className="font-mono text-[10px] tracking-[0.14em]" style={{ color: 'var(--text-3)' }}>{q.context}</p>
+    <>
+      {s.quotes.map((q, i) => {
+        const isOffset = i % 2 === 1
+        const mt = i === 0 ? gapTop(s.gap) : sp(6)
+        return (
+          <section key={i} className="aino-section" style={{ marginTop: mt }}>
+            <div className="aino-inner">
+              {isOffset && <div className="hidden md:block md:col-span-2" />}
+              <div className={isOffset ? 'col-span-6 md:col-span-4' : 'col-span-6 md:col-span-5'}>
+                <p className="font-mono text-[10px] tracking-[0.12em] mb-5" style={{ color: 'var(--text-3)' }}>{q.context}</p>
+                <p className="font-display font-normal leading-[1.15]"
+                  style={{ color: 'var(--text)', fontSize: 'clamp(24px, 3.6vw, 48px)', letterSpacing: '-0.01em' }}>
+                  &ldquo;{q.text}&rdquo;
+                </p>
+              </div>
             </div>
-          ))}
-        </div>
+          </section>
+        )
+      })}
+    </>
+  )
+}
+
+// Editorial caption strip — mono label on the left, readable sentence on the right.
+// Aligns to the image width above and breathes instead of crushing.
+function ImageCaption({ label, caption, center }: { label?: string; caption?: string; center?: boolean }) {
+  if (!caption) return null
+  return (
+    <div className={`flex flex-col md:flex-row md:items-baseline gap-2 md:gap-8 mt-5 ${center ? 'justify-center text-center md:text-left' : ''}`}>
+      {label && (
+        <p className="shrink-0 md:w-[140px]"><span className="font-mono text-[10px] font-bold tracking-[0.12em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ {label} ]</span></p>
       )}
-    </Slide>
+      <p className="font-display text-[13px] md:text-[14px] font-normal leading-[1.6] tracking-[0.02em] max-w-[720px]" style={{ color: 'var(--text-3)' }}>
+        {caption}
+      </p>
+    </div>
   )
 }
 
 function ImageSection({ s }: { s: CaseStudySection & { type: 'image' } }) {
   return (
-    <FadeIn>
-      <div className={`py-16 md:py-24 ${s.bg === 'dark' ? 'section-dark grain relative' : ''}`} style={{ backgroundColor: 'var(--bg)' }}>
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 relative z-10">
-          {s.label && (
-            <div className="max-w-[1136px] mx-auto px-4 md:px-8 mb-8">
-              <SLabel label={s.label} />
-            </div>
-          )}
+    <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+      <div className="aino-inner-wide">
+        {s.video ? (
+          <>
+            <MediaBlock video={s.video} label={s.caption} />
+            <ImageCaption label={s.label} caption={s.caption} />
+          </>
+        ) : s.imageAfter ? (
           <ImagePlaceholder aspect="video" device="split" src={s.image} srcAfter={s.imageAfter} caption={s.caption} />
-        </div>
+        ) : s.device === 'mobile' ? (
+          <>
+            <MobileMediaBlock image={s.image} video={s.video} />
+            <ImageCaption label={s.label} caption={s.caption} center />
+          </>
+        ) : s.image ? (
+          <>
+            <MediaBlock image={s.image} label={s.caption || ''} natural={s.imageNatural} />
+            <ImageCaption label={s.label} caption={s.caption} />
+          </>
+        ) : (
+          <ImagePlaceholder aspect="video" device="split" src={s.image} srcAfter={s.imageAfter} caption={s.caption} />
+        )}
       </div>
-    </FadeIn>
+    </section>
   )
 }
 
 function PhaseSection({ s }: { s: CaseStudySection & { type: 'phase' } }) {
+  const hasTopMedia = !!(s.video || (s.fullBleed && s.image))
+  const hasSideImage = !!s.image && !s.fullBleed
   return (
-    <FadeIn>
-      <div className={`min-h-screen flex items-center relative overflow-hidden ${s.bg === 'dark' ? 'section-dark grain' : ''}`}
-        style={{ backgroundColor: 'var(--bg)' }}>
-        {s.number && (
-          <span className="absolute top-[10%] right-[5%] font-display font-extralight text-[240px] md:text-[320px] leading-none select-none pointer-events-none"
-            style={{ color: 'var(--text)', opacity: 0.04, letterSpacing: '-0.02em' }}>{s.number}</span>
-        )}
-        <div className="max-w-[1136px] mx-auto px-8 md:px-16 py-24 md:py-32 relative z-10 w-full">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-12 md:gap-20 items-center">
-            <div>
-              <SLabel label={s.label} />
-              <SHeading heading={s.heading} />
-              <SBody body={s.body} />
-              {s.result && (
-                <div className="mt-12 pt-8 max-w-[500px]" style={{ borderTop: '1px solid var(--border)' }}>
-                  <p className="font-mono text-[10px] tracking-[0.14em] mb-4" style={{ color: 'var(--text-3)' }}>[ Result ]</p>
-                  <p className="font-display text-[15px] font-normal leading-[1.7] tracking-[0.02em]" style={{ color: 'var(--text-2)' }}>{s.result}</p>
-                </div>
-              )}
+    <>
+      {/* Full-width media first — show the result. Skip entirely if there's no media. */}
+      {hasTopMedia && (
+        <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+          {s.fullBleed ? (
+            <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', position: 'relative' }}>
+              {s.video ? (
+                <video src={s.video} autoPlay loop muted playsInline style={{ width: '100%', height: 'auto', display: 'block', backgroundColor: 'var(--bg-2)' }} />
+              ) : s.image ? (
+                <img src={s.image} alt={s.imageHint || s.heading || ''} style={{ width: '100%', height: 'auto', display: 'block', backgroundColor: 'var(--bg-2)' }} loading="lazy" />
+              ) : null}
             </div>
-            <div>
+          ) : (
+            <div className="aino-inner-wide">
+              <MediaBlock video={s.video} label={s.imageHint || s.heading} />
+            </div>
+          )}
+        </section>
+      )}
+      {/* Then the narrative. Media-free phases get top gap here instead of on the media block. */}
+      <section className="aino-section" style={{ marginTop: hasTopMedia ? sp(3) : gapTop(s.gap) }}>
+        <div className="aino-inner items-start">
+          <div className={hasSideImage ? 'col-span-6 md:col-span-3' : 'col-span-6 md:col-span-4'}>
+            {s.label && <SLabel label={s.label} />}
+            {s.heading && <h2 className="font-display font-normal text-[22px] md:text-[28px] leading-[1.2] mb-5 max-w-[440px]" style={{ color: 'var(--text)' }}>{s.heading}</h2>}
+            <SBody body={s.body} />
+            {s.result && (
+              <div className="mt-8 pt-5 max-w-[440px]" style={{ borderTop: '1px solid var(--border)' }}>
+                <SHeading heading="Result" />
+                <p className="font-display text-[14px] font-normal leading-[1.75] tracking-[0.015em]" style={{ color: 'var(--text)' }}>{s.result}</p>
+              </div>
+            )}
+          </div>
+          {hasSideImage && (
+            <div className={`col-span-6 md:col-span-3 ${s.imageLeft ? 'md:order-first' : ''}`}>
               <ImagePlaceholder aspect="video" device="mobile" src={s.image} />
             </div>
-          </div>
+          )}
         </div>
-      </div>
-    </FadeIn>
+      </section>
+    </>
   )
 }
 
 function ComparisonSection({ s }: { s: CaseStudySection & { type: 'comparison' } }) {
   return (
-    <Slide dark={s.bg === 'dark'}>
-      <SLabel label={s.label} />
-      <SHeading heading={s.heading} />
-      <SBody body={s.body} />
-      {s.beforeAfter && (
-        <div className="mt-12">
-          <BeforeAfter
-            before={s.beforeAfter.before}
-            after={s.beforeAfter.after}
-            beforeLabel={s.beforeAfter.beforeLabel}
-            afterLabel={s.beforeAfter.afterLabel}
-            device={s.beforeAfter.device}
-          />
+    <>
+      <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+        <div className="aino-inner">
+          {s.heading && <div className="col-span-6 md:col-span-4 mb-4"><SMega text={s.heading} /></div>}
+          {s.body && <div className="col-span-6 md:col-span-3"><SBody body={s.body} /></div>}
         </div>
+      </section>
+      {s.beforeAfter && (
+        <section className="aino-section" style={{ marginTop: sp(3) }}>
+          <div className="aino-inner-wide">
+            <div className="mx-auto" style={{ maxWidth: 375 }}>
+              <BeforeAfter
+                before={s.beforeAfter.before}
+                after={s.beforeAfter.after}
+                beforeLabel={s.beforeAfter.beforeLabel}
+                afterLabel={s.beforeAfter.afterLabel}
+                device={s.beforeAfter.device}
+              />
+            </div>
+          </div>
+        </section>
       )}
       {s.options && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mt-16">
-          {s.options.map((opt, i) => (
-            <div key={i}>
-              <div className="flex items-center gap-3 mb-6">
-                <p className="font-mono text-[10px] tracking-[0.14em]" style={{ color: 'var(--text-3)' }}>{opt.label}</p>
-                {opt.outcome && <span className="font-mono text-[9px] tracking-[0.12em] px-3 py-1" style={{ color: 'var(--text)', border: '1px solid var(--border)' }}>{opt.outcome}</span>}
-              </div>
-              <ImagePlaceholder aspect="4/3" src={opt.image} className="mb-6" />
-              <p className="font-display text-[15px] font-normal leading-[1.7] tracking-[0.02em]" style={{ color: 'var(--text-2)' }}>{opt.description}</p>
+        <section className="aino-section" style={{ marginTop: sp(3) }}>
+          <div className="aino-inner-wide">
+            <div className="mx-auto" style={{ maxWidth: 820 }}>
+              {s.options.map((opt, i) => (
+                <div key={i} style={{ marginTop: i === 0 ? 0 : sp(1) }}>
+                  <ImagePlaceholder aspect="4/3" src={opt.image} />
+                  <div className="flex items-baseline gap-3 mt-3 mb-2">
+                    <SHeading heading={opt.label} />
+                    {opt.outcome && <span className="font-mono text-[9px] tracking-[0.1em] px-2 py-0.5" style={{ color: 'var(--text)', border: '1px solid var(--border)' }}>{opt.outcome}</span>}
+                  </div>
+                  <p className="font-display text-[14px] font-normal leading-[1.75] tracking-[0.015em] max-w-[620px]" style={{ color: 'var(--text)' }}>{opt.description}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        </section>
       )}
-    </Slide>
+    </>
   )
 }
 
 function OutcomeSection({ s }: { s: CaseStudySection & { type: 'outcome' } }) {
+  const dark = s.bg === 'dark'
+  // When dark, override CSS vars so all inner text/borders invert without touching every element
+  const darkStyle: React.CSSProperties & Record<string, string> = dark ? {
+    backgroundColor: '#000',
+    color: '#fff',
+    '--text': '#ffffff',
+    '--text-3': 'rgba(255,255,255,0.5)',
+    '--border': 'rgba(255,255,255,0.15)',
+    paddingTop: sp(8),
+    paddingBottom: sp(8),
+  } as React.CSSProperties & Record<string, string> : { paddingTop: sp(4) }
   return (
-    <FadeIn>
-      <div className="section-dark grain relative min-h-screen flex items-center" style={{ backgroundColor: 'var(--bg)' }}>
-        <div className="max-w-[1136px] mx-auto w-full px-8 md:px-16 py-24 md:py-32 relative z-10">
-          <SLabel label={s.label} />
-          {s.impact && (
-            <div className="mb-20">
-              {s.impact.map((item, i) => (
-                <div key={i} className={i > 0 ? 'mt-10 pt-10 border-t' : ''} style={{ borderColor: 'var(--border)' }}>
-                  <FluidType
-                    text={item.value}
-                    minSize={48}
-                    maxSize={180}
-                  />
-                  <p className="font-display text-[15px] font-normal tracking-[0.04em] mt-6" style={{ color: 'var(--text-2)' }}>{item.label}</p>
-                </div>
-              ))}
-            </div>
-          )}
-          {s.reflections && (
-            <div>
-              <p className="font-mono text-[10px] tracking-[0.14em] mb-10" style={{ color: 'var(--text-3)' }}>[ Reflections ]</p>
-              <div className="space-y-0">
-                {s.reflections.map((ref, i) => (
-                  <div key={i} className="py-8 border-t last:border-b" style={{ borderColor: 'var(--border)' }}>
-                    <p className="font-display text-[15px] font-medium tracking-[0.03em] mb-2" style={{ color: 'var(--text)' }}>{ref.title}</p>
-                    <p className="font-display text-[15px] font-normal leading-[1.7] tracking-[0.02em] max-w-[620px]" style={{ color: 'var(--text-2)' }}>{ref.body}</p>
-                  </div>
-                ))}
+    <section className="aino-section" style={{ marginTop: gapTop(s.gap), ...darkStyle }}>
+      <div className="aino-inner">
+        {s.impact && s.impact.map((item, i) => (
+          <div key={i} className={`col-span-6 ${i > 0 ? 'mt-6 pt-6 border-t' : ''}`} style={{ borderColor: 'var(--border)' }}>
+            <FluidType text={item.value} minSize={48} maxSize={140} />
+            <p className="font-display text-[13px] font-normal tracking-[0.02em] mt-4" style={{ color: 'var(--text)' }}>{item.label}</p>
+          </div>
+        ))}
+        {s.reflections && (
+          <div className="col-span-6" style={{ marginTop: sp(4) }}>
+            <SHeading heading="Reflections" />
+            {s.reflections.map((ref, i) => (
+              <div key={i} className="py-5 border-t last:border-b" style={{ borderColor: 'var(--border)' }}>
+                <p className="font-display text-[14px] font-medium tracking-[0.02em] mb-1" style={{ color: 'var(--text)' }}>{ref.title}</p>
+                <p className="font-display text-[14px] font-normal leading-[1.75] tracking-[0.015em] max-w-[560px]" style={{ color: 'var(--text)' }}>{ref.body}</p>
               </div>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
-    </FadeIn>
+    </section>
   )
 }
 
-function RenderSection({ section }: { section: CaseStudySection }) {
-  switch (section.type) {
-    case 'text':       return <TextSection s={section as CaseStudySection & { type: 'text' }} />
-    case 'twocol':     return <TwoColSection s={section as CaseStudySection & { type: 'twocol' }} />
-    case 'stats':      return <StatsSection s={section as CaseStudySection & { type: 'stats' }} />
-    case 'columns':    return <ColumnsSection s={section as CaseStudySection & { type: 'columns' }} />
-    case 'grid':       return <GridSection s={section as CaseStudySection & { type: 'grid' }} />
-    case 'quotes':     return <QuotesSection s={section as CaseStudySection & { type: 'quotes' }} />
-    case 'image':      return <ImageSection s={section as CaseStudySection & { type: 'image' }} />
-    case 'phase':      return <PhaseSection s={section as CaseStudySection & { type: 'phase' }} />
-    case 'comparison': return <ComparisonSection s={section as CaseStudySection & { type: 'comparison' }} />
-    case 'outcome':    return <OutcomeSection s={section as CaseStudySection & { type: 'outcome' }} />
-    default: return null
-  }
+function RenderSection({ section, index }: { section: CaseStudySection; index: number }) {
+  const content = (() => {
+    switch (section.type) {
+      case 'text':       return <TextSection s={section as CaseStudySection & { type: 'text' }} index={index} />
+      case 'twocol':     return <TwoColSection s={section as CaseStudySection & { type: 'twocol' }} index={index} />
+      case 'stats':      return <StatsSection s={section as CaseStudySection & { type: 'stats' }} />
+      case 'columns':    return <ColumnsSection s={section as CaseStudySection & { type: 'columns' }} />
+      case 'grid':       return <GridSection s={section as CaseStudySection & { type: 'grid' }} />
+      case 'quotes':     return <QuotesSection s={section as CaseStudySection & { type: 'quotes' }} />
+      case 'image':      return <ImageSection s={section as CaseStudySection & { type: 'image' }} />
+      case 'phase':      return <PhaseSection s={section as CaseStudySection & { type: 'phase' }} />
+      case 'comparison': return <ComparisonSection s={section as CaseStudySection & { type: 'comparison' }} />
+      case 'outcome':    return <OutcomeSection s={section as CaseStudySection & { type: 'outcome' }} />
+      default: return null
+    }
+  })()
+
+  return content
 }
 
 // ─── Page ─────────────────────────────────────────────────────────
@@ -317,116 +499,115 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
 
   const cs = project.caseStudy
   const currentIdx = projects.findIndex((p) => p.slug === slug)
-  const prev = projects[(currentIdx - 1 + projects.length) % projects.length]
-  const next = projects[(currentIdx + 1) % projects.length]
+  const positionNumber = String(currentIdx + 1).padStart(2, '0')
 
   return (
-    <div className="overflow-x-hidden">
-
+    <div className="overflow-x-hidden" style={{ backgroundColor: 'var(--bg)' }}>
       <SlideKeyboardNav />
-      <ProjectSideNav prev={{ slug: prev.slug, title: prev.title }} next={{ slug: next.slug, title: next.title }} />
 
-      {/* Hero — full-screen dark title slide */}
-      <section className="section-dark grain relative" style={{ backgroundColor: 'var(--bg)' }}>
-        <div className="relative z-10">
-          {project.heroVideo ? (
-            <div className="relative min-h-screen">
-              <div className="hidden md:block absolute inset-0 left-[35%] overflow-hidden">
-                <video src={project.heroVideo} autoPlay loop muted playsInline className="w-full h-full object-contain object-right" />
-              </div>
-              <div className="relative z-10 h-full min-h-screen flex flex-col md:justify-center">
-                <div className="max-w-[1136px] mx-auto w-full px-8 md:px-16 pt-24 md:pt-0">
-                  <p className="font-mono text-[10px] tracking-[0.14em] mb-10" style={{ color: 'var(--text-3)' }}>[ {cs.label} ]</p>
-                  <h1 className="font-display font-extralight text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] leading-[1.02] mb-6 md:max-w-[600px]"
-                    style={{ letterSpacing: '0.005em', color: 'var(--text)' }}>{project.title}</h1>
-                  <p className="font-display text-[16px] font-normal tracking-[0.04em]" style={{ color: 'var(--text-2)' }}>{project.company}</p>
-                </div>
-                <div className="md:hidden w-full h-[50vh] mt-8">
-                  <video src={project.heroVideo} autoPlay loop muted playsInline className="w-full h-full object-contain" />
-                </div>
-              </div>
+      {/* ── Hero video first — Aino Gulled style ─────────────── */}
+      {/* Exactly one viewport tall. Fit modes:
+         - 'actual' → intrinsic pixel size, overflow cropped (used for landscape videos that fit naturally)
+         - 'phone'  → wrapped in a phone device frame (matches MobileMediaBlock aesthetic)
+         - default  → contained inside viewport (max height 100%, max width 70%) */}
+      {project.heroVideo && (
+        <section data-slide-align="top" data-bg="dark" style={{ backgroundColor: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '6vh 0' }}>
+          {project.heroVideoFit === 'phone' ? (
+            <div style={{
+              height: '100%',
+              aspectRatio: '9 / 19.5',
+              maxWidth: '90%',
+              border: '12px solid #0a0a0a',
+              borderRadius: '48px',
+              overflow: 'hidden',
+              backgroundColor: '#000',
+              boxShadow: '0 0 0 1px rgba(255,255,255,0.06)',
+            }}>
+              <video
+                src={project.heroVideo}
+                autoPlay loop muted playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
             </div>
           ) : (
-            <div className="min-h-screen flex items-center">
-              <div className="max-w-[1136px] mx-auto w-full px-8 md:px-16">
-                <p className="font-mono text-[10px] tracking-[0.14em] mb-12" style={{ color: 'var(--text-3)' }}>[ {cs.label} ]</p>
-                <h1 className="font-display font-extralight text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] leading-[1.02] mb-6"
-                  style={{ letterSpacing: '0.005em', color: 'var(--text)' }}>{project.title}</h1>
-                <p className="font-display text-[16px] font-normal tracking-[0.04em] mb-20" style={{ color: 'var(--text-2)' }}>{project.company}</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pt-12" style={{ borderTop: '1px solid var(--border)' }}>
-                  {cs.impact.map((item) => (
-                    <div key={item.label}>
-                      <p className="font-display font-medium text-[36px] md:text-[48px] leading-none mb-3"
-                        style={{ letterSpacing: '-0.01em', color: 'var(--text)' }}>{item.value}</p>
-                      <p className="font-display text-[13px] font-normal tracking-[0.04em] leading-snug" style={{ color: 'var(--text-2)' }}>{item.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <video
+              src={project.heroVideo}
+              autoPlay loop muted playsInline
+              style={
+                project.heroVideoFit === 'actual'
+                  ? { width: '1500px', height: 'auto', maxWidth: 'none', maxHeight: 'none', display: 'block', flexShrink: 0 }
+                  : { maxHeight: '100%', maxWidth: '70%', width: 'auto', height: 'auto', display: 'block' }
+              }
+            />
           )}
+        </section>
+      )}
 
-          {/* Metadata bar */}
-          <div style={{ borderTop: '1px solid var(--border)', backgroundColor: 'var(--bg-2)' }}>
-            <div className="max-w-[1136px] mx-auto px-8 md:px-16 py-10 grid grid-cols-2 sm:grid-cols-4 gap-8">
-              {[
-                { label: 'Role', value: cs.role },
-                { label: 'Team', value: cs.team },
-                { label: 'Duration', value: cs.duration },
-                { label: 'Impact', value: cs.impact.map(i => i.value).join(' · ') },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <p className="font-mono text-[9px] tracking-[0.14em] mb-2" style={{ color: 'var(--text-3)' }}>{label}</p>
-                  <p className="font-display text-[13px] font-normal tracking-[0.03em] leading-relaxed" style={{ color: 'var(--text-2)' }}>{value}</p>
-                </div>
-              ))}
-            </div>
+      {/* ── Title slide — title + metadata + summary as one opening ────────
+         marginTop sized so the centered landing clears the hero's bottom
+         and the slide sits visually centered in the viewport. */}
+      <section className="aino-section" style={{ marginTop: sp(7) }}>
+        <div className="aino-inner">
+          <div className="col-span-6 md:col-span-4">
+            <p className="mb-8"><span className="font-mono text-[16px] font-bold tracking-[0.14em] inline-block px-3 py-1.5" style={{ backgroundColor: '#000', color: '#fff' }}>{positionNumber}</span></p>
+            <h1 className="font-display font-normal text-[36px] sm:text-[48px] md:text-[60px] lg:text-[72px] leading-[0.95]"
+              style={{ letterSpacing: '-0.02em', color: 'var(--text)' }}>{project.title}</h1>
+          </div>
+        </div>
+        {/* Metadata row — year / role / team */}
+        <div className="aino-inner" style={{ marginTop: sp(2) }}>
+          <div className="col-span-6 grid grid-cols-2 gap-x-6 gap-y-5 py-5 md:grid-cols-[1fr_1.2fr_1.8fr] md:gap-x-12 md:gap-y-0" style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+            {[
+              { label: 'Year', value: project.year },
+              { label: 'Role', value: cs.role },
+              { label: 'Team', value: cs.team },
+            ].map((item) => (
+              <div key={item.label}>
+                <p className="font-mono text-[10px] tracking-[0.12em] mb-1.5" style={{ color: 'var(--text-3)' }}>{item.label}</p>
+                <p className="font-display text-[13px] font-normal leading-snug" style={{ color: 'var(--text)' }}>{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Summary — the story hook. Part of the title slide so "down" advances once to the next beat. */}
+        <div className="aino-inner" style={{ marginTop: sp(4) }}>
+          <div className="col-span-6 md:col-span-5">
+            <SMega text={project.summary} />
           </div>
         </div>
       </section>
 
-      {/* Sections — each renders as a full-viewport slide */}
+      {/* ── Story sections — editorial flow with imagery ──────── */}
       {cs.sections.map((section, i) => (
-        <RenderSection key={i} section={section} />
+        <RenderSection key={i} section={section} index={i} />
       ))}
 
-      {/* Prev / Next — clean dark ending */}
-      <FadeIn>
-        <div className="section-dark grain relative" style={{ backgroundColor: 'var(--bg)' }}>
-          <div className="max-w-[1136px] mx-auto w-full px-8 md:px-16 py-20 relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-              <Link href={`/work/${prev.slug}`}
-                className="group flex items-center gap-5 py-12 md:pr-16 md:border-r transition-opacity duration-200 hover:opacity-70"
-                style={{ borderColor: 'var(--border)' }}>
-                <span className="font-mono text-[11px] tracking-[0.1em] shrink-0" style={{ color: 'var(--text)' }}>[◂]</span>
-                <div>
-                  <p className="font-mono text-[9px] tracking-[0.14em] mb-2" style={{ color: 'var(--text-3)' }}>Previous</p>
-                  <p className="font-display font-medium text-[20px] md:text-[24px] leading-tight"
-                    style={{ letterSpacing: '0.005em', color: 'var(--text)' }}>{prev.title}</p>
-                </div>
-              </Link>
-
-              <Link href={`/work/${next.slug}`}
-                className="group flex items-center gap-5 py-12 md:pl-16 flex-row-reverse md:text-right transition-opacity duration-200 hover:opacity-70 border-t md:border-t-0"
-                style={{ borderColor: 'var(--border)' }}>
-                <span className="font-mono text-[11px] tracking-[0.1em] shrink-0" style={{ color: 'var(--text)' }}>[▸]</span>
-                <div>
-                  <p className="font-mono text-[9px] tracking-[0.14em] mb-2" style={{ color: 'var(--text-3)' }}>Next</p>
-                  <p className="font-display font-medium text-[20px] md:text-[24px] leading-tight"
-                    style={{ letterSpacing: '0.005em', color: 'var(--text)' }}>{next.title}</p>
-                </div>
-              </Link>
-            </div>
-
-            <div className="pt-10 mt-6" style={{ borderTop: '1px solid var(--border)' }}>
-              <div className="inline-flex items-center gap-1.5">
-                <span className="font-mono text-[10px] tracking-[0.1em]" style={{ color: 'var(--text-3)' }}>◂</span>
-                <BracketLink href="/">All projects</BracketLink>
+      {/* ── Prev / Next navigation ──────────────────────────── */}
+      {(() => {
+        const prevProject = currentIdx > 0 ? projects[currentIdx - 1] : projects[projects.length - 1]
+        const nextProject = currentIdx < projects.length - 1 ? projects[currentIdx + 1] : projects[0]
+        return (
+          <section className="aino-section" style={{ marginTop: sp(8), paddingBottom: sp(6), borderTop: '1px solid var(--border)' }}>
+            <div className="aino-inner" style={{ paddingTop: sp(3) }}>
+              <div className="col-span-3">
+                <Link href={`/work/${prevProject.slug}`} className="group block">
+                  <p className="font-mono text-[10px] tracking-[0.12em] mb-3" style={{ color: 'var(--text-3)' }}>Previous</p>
+                  <p className="font-display text-[20px] md:text-[28px] lg:text-[36px] font-normal leading-[1.1] transition-opacity duration-200 group-hover:opacity-60"
+                    style={{ letterSpacing: '-0.01em', color: 'var(--text)' }}>{prevProject.title}</p>
+                </Link>
+              </div>
+              <div className="col-span-3 text-right">
+                <Link href={`/work/${nextProject.slug}`} className="group block">
+                  <p className="font-mono text-[10px] tracking-[0.12em] mb-3" style={{ color: 'var(--text-3)' }}>Next</p>
+                  <p className="font-display text-[20px] md:text-[28px] lg:text-[36px] font-normal leading-[1.1] transition-opacity duration-200 group-hover:opacity-60"
+                    style={{ letterSpacing: '-0.01em', color: 'var(--text)' }}>{nextProject.title}</p>
+                </Link>
               </div>
             </div>
-          </div>
-        </div>
-      </FadeIn>
+          </section>
+        )
+      })()}
+
     </div>
   )
 }
