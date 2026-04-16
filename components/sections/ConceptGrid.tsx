@@ -13,6 +13,7 @@ interface ConceptItem {
 
 interface ConceptGridProps {
   items: ConceptItem[]
+  cols?: number
 }
 
 function ConceptCard({ item }: { item: ConceptItem }) {
@@ -33,38 +34,38 @@ function ConceptCard({ item }: { item: ConceptItem }) {
 
   return (
     <div
-      className="p-6 border border-th-border relative text-left group hover:bg-th-bg2 transition-colors duration-200"
+      className="p-6 border border-th-border relative text-left group hover:bg-th-bg2 transition-colors duration-200 flex flex-col"
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
     >
-      <div className="mb-4 flex justify-center">
-        {(item.video || item.image) ? (
+      <div className="flex-1 mb-4 flex justify-center items-center">
+        {item.video ? (
+          // Phone frame — only for videos (device interactions)
           <div style={{
-            maxWidth: '200px',
+            maxWidth: '220px',
             border: '12px solid #000',
             borderRadius: '30px',
             overflow: 'hidden',
             backgroundColor: '#000',
           }}>
-            {item.video ? (
-              <video
-                ref={videoRef}
-                src={item.video}
-                loop
-                muted
-                playsInline
-                className="transition-opacity duration-300"
-                style={{ width: '100%', height: 'auto', display: 'block', opacity: hovered ? 1 : 0.35 }}
-              />
-            ) : (
-              <img
-                src={item.image}
-                alt={item.title}
-                className="transition-opacity duration-300"
-                style={{ width: '100%', height: 'auto', display: 'block', opacity: hovered ? 1 : 0.35 }}
-              />
-            )}
+            <video
+              ref={videoRef}
+              src={item.video}
+              loop
+              muted
+              playsInline
+              className="transition-opacity duration-300"
+              style={{ width: '100%', height: 'auto', display: 'block', opacity: hovered ? 1 : 0.35 }}
+            />
           </div>
+        ) : item.image ? (
+          // No frame for images — show at natural size
+          <img
+            src={item.image}
+            alt={item.title}
+            className="transition-opacity duration-300 w-full"
+            style={{ height: 'auto', display: 'block', opacity: hovered ? 1 : 0.7 }}
+          />
         ) : (
           <MiniPhoneSketch />
         )}
@@ -84,9 +85,10 @@ function ConceptCard({ item }: { item: ConceptItem }) {
   )
 }
 
-export default function ConceptGrid({ items }: ConceptGridProps) {
+export default function ConceptGrid({ items, cols }: ConceptGridProps) {
+  const colClass = cols === 2 ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">
+    <div className={`grid grid-cols-1 ${colClass} gap-4 mt-10`}>
       {items.map((item, i) => (
         <ConceptCard key={i} item={item} />
       ))}

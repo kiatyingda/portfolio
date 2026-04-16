@@ -262,7 +262,7 @@ function GridSection({ s }: { s: CaseStudySection & { type: 'grid' } }) {
         {s.label && <div className="col-span-6"><SLabel label={s.label} /></div>}
         {s.heading && <div className="col-span-6 mb-4"><SMega text={s.heading} /></div>}
         <div className="col-span-6">
-          {s.items && <ConceptGrid items={s.items} />}
+          {s.items && <ConceptGrid items={s.items} cols={s.items.length <= 2 ? 2 : undefined} />}
         </div>
       </div>
     </section>

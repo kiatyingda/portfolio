@@ -302,7 +302,11 @@ export const projects: Project[] = [
             },
             {
               title: 'Transparency > control',
-              body: 'Explicit ride types instead of opaque bundles — trust went up, same ask.',
+              body: 'Explicit ride types instead of opaque bundles — users value transparency over over-prescribed recommendations.',
+            },
+            {
+              title: 'Design for the best experience',
+              body: 'Multiple-ride types underwent 3 different phases and set the foundation of a 5-year product vision.',
             },
           ],
         },
@@ -362,26 +366,16 @@ export const projects: Project[] = [
           gap: 'standard',
           label: 'The Problem',
           heading: 'Making complex incentives feel instantly legible.',
-          body: 'Staking, boosts, multipliers, lock-ups — inherently complex financial mechanics. Most competitors default to information overload. The challenge was making complex incentives feel instantly legible.',
+          body: 'Staking, boosts, multipliers, lock-ups — inherently complex financial mechanics. Most competitors dump everything on the user. The design challenge was deciding what to surface first, and what to hide until needed.',
         },
         {
           type: 'image',
           bg: 'light',
           gap: 'standard',
           image: '/images/okx-boost-complexity.png',
-          label: 'The inherited complexity',
-          caption: 'Eligibility criteria, multipliers, lock-up windows, reward timing — the rules users had to reason about.',
-        },
-        {
-          type: 'text',
-          bg: 'light',
-          gap: 'standard',
-          label: 'The Tension',
-          heading: 'Progressive disclosure — but we never tested it.',
-          body: [
-            'Campaign rules were genuinely complex — eligibility criteria, minimum volumes, reward timing. PMs wanted everything upfront. I pushed for progressive disclosure — surface value first, let users pull detail as needed.',
-            'We shipped under timeline pressure without testing it. That\'s the honest gap. My position today: we over-disclosed. The final product was simpler than the first draft — but not simple enough.',
-          ],
+          imageNatural: true,
+          label: 'X Launch — event states',
+          caption: 'One event, five states — each requiring a different layout, CTA, and information priority. Designing for state meant the UI had to work at every point in the timeline, not just when the event was live.',
         },
         {
           type: 'columns',

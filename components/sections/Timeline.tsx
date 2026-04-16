@@ -10,7 +10,7 @@ export default function Timeline() {
     <section id="experience" data-bg="light" className="relative">
       <div className="w-full px-4 md:px-8 lg:px-10 pt-10 md:pt-14 pb-24 md:pb-36">
         <FadeIn>
-          <p className="mb-24 md:mb-32"><span className="font-mono text-[14px] md:text-[16px] font-bold tracking-[0.14em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ EXPERIENCE ]</span></p>
+          <p className="mb-24 md:mb-32"><span className="font-mono text-[14px] md:text-[16px] font-bold tracking-[0.14em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ MY STORY ]</span></p>
         </FadeIn>
         <FadeIn>
           <div className="space-y-0">
