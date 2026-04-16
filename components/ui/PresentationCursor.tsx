@@ -18,7 +18,6 @@ const TRAIL = [
 
 export default function PresentationCursor() {
   const [active, setActive] = useState(false)
-  const crosshairRef = useRef<HTMLDivElement>(null)
   const trailRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const target = useRef({ x: -100, y: -100 })
@@ -41,11 +40,8 @@ export default function PresentationCursor() {
   }, [])
 
   useEffect(() => {
-    if (!active) {
-      document.body.style.cursor = ''
-      return
-    }
-    document.body.style.cursor = 'none'
+    // Keep the native arrow cursor; only the trailing `+` glyphs are ours.
+    if (!active) return
 
     function onMove(e: MouseEvent) {
       target.current.x = e.clientX
@@ -77,14 +73,8 @@ export default function PresentationCursor() {
     }
 
     function tick() {
-      // Decay boost toward 1 each frame
+      // Decay boost toward 1 each frame (kept for future use on trail sizing).
       boost.current += (1 - boost.current) * 0.12
-
-      if (crosshairRef.current) {
-        const t = target.current
-        const s = boost.current
-        crosshairRef.current.style.transform = `translate(${t.x}px, ${t.y}px) translate(-50%, -50%) scale(${s})`
-      }
 
       // Each trail glyph chases the PREVIOUS one (head chases pointer),
       // so the tail naturally lags further back the deeper it sits.
@@ -108,7 +98,6 @@ export default function PresentationCursor() {
     return () => {
       window.removeEventListener('mousemove', onMove)
       if (rafId.current) cancelAnimationFrame(rafId.current)
-      document.body.style.cursor = ''
     }
   }, [active])
 
@@ -124,24 +113,9 @@ export default function PresentationCursor() {
 
   return (
     <>
-      {/* Head — thin-stroke `+` at exact pointer position */}
-      <div
-        ref={crosshairRef}
-        aria-hidden
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          pointerEvents: 'none',
-          zIndex: 9999,
-          userSelect: 'none',
-          willChange: 'transform',
-        }}
-      >
-        <SvgPlus size={32} />
-      </div>
+      {/* Head is the native arrow cursor — we only render the trailing `+` glyphs. */}
 
-      {/* Trail — thin-stroke black `+`, behind the head, slow follow */}
+      {/* Trail — thin-stroke black `+`, behind the arrow, slow follow */}
       {TRAIL.map((tier, i) => (
         <div
           key={i}

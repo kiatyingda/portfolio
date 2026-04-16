@@ -178,20 +178,21 @@ function TextSection({ s, index }: { s: CaseStudySection & { type: 'text' }; ind
 function TwoColSection({ s, index }: { s: CaseStudySection & { type: 'twocol' }; index: number }) {
   return (
     <>
-      <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+      {/* Full-viewport slide: content sits at ~35% from top (flex + padding)
+          so there isn't a vast empty band above the heading when centered. */}
+      <section data-slide-align="top" className="aino-section flex flex-col justify-start items-stretch" style={{ marginTop: gapTop(s.gap), minHeight: '100vh', paddingTop: '28vh' }}>
         {s.heading && (
-          <div className="aino-inner">
-            <div className="col-span-6">
-              <SMega text={s.heading} />
-            </div>
+          <div className="mx-auto max-w-[1120px] px-8 w-full">
+            <p className="font-display font-normal text-[22px] md:text-[30px] lg:text-[36px] leading-[1.3] tracking-[0.01em]"
+              style={{ color: 'var(--text)', textWrap: 'balance' } as React.CSSProperties}>{s.heading}</p>
           </div>
         )}
         {s.left && s.right && (
-          <div className="aino-inner" style={{ marginTop: sp(2) }}>
+          <div className="mx-auto max-w-[1120px] px-8 w-full grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12" style={{ marginTop: sp(2) }}>
             {[s.left, s.right].map((col, i) => (
-              <div key={i} className="col-span-6 md:col-span-3">
+              <div key={i}>
                 <SHeading heading={col.heading} />
-                <p className="font-display text-[14px] md:text-[15px] font-normal leading-[1.75] tracking-[0.015em] max-w-[460px]" style={{ color: 'var(--text)' }}>{col.body}</p>
+                <p className="font-display text-[14px] md:text-[15px] font-normal leading-[1.75] tracking-[0.015em]" style={{ color: 'var(--text)' }}>{col.body}</p>
               </div>
             ))}
           </div>
@@ -218,16 +219,18 @@ function TwoColSection({ s, index }: { s: CaseStudySection & { type: 'twocol' };
 function StatsSection({ s }: { s: CaseStudySection & { type: 'stats' } }) {
   return (
     <section className="aino-section" style={{ marginTop: gapTop(s.gap), paddingTop: sp(4), paddingBottom: sp(4) }}>
-      <div className="aino-inner">
-        {s.stats && s.stats.map((stat, i) => (
-          <div key={i} className="col-span-3 md:col-span-3 mb-6 last:mb-0">
-            <p className="font-display font-medium text-[48px] md:text-[64px] lg:text-[80px] leading-none mb-2"
-              style={{ letterSpacing: '-0.02em', color: 'var(--text)' }}>{stat.value}</p>
-            <p className="font-display text-[13px] font-normal tracking-[0.02em] max-w-[280px]" style={{ color: 'var(--text)' }}>{stat.label}</p>
-          </div>
-        ))}
+      <div className="mx-auto max-w-[1120px] px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12">
+          {s.stats && s.stats.map((stat, i) => (
+            <div key={i}>
+              <p className="font-display font-medium text-[48px] md:text-[64px] lg:text-[80px] leading-none mb-2"
+                style={{ letterSpacing: '-0.02em', color: 'var(--text)' }}>{stat.value}</p>
+              <p className="font-display text-[13px] font-normal tracking-[0.02em] max-w-[280px]" style={{ color: 'var(--text)' }}>{stat.label}</p>
+            </div>
+          ))}
+        </div>
         {s.insight && (
-          <div className="col-span-6" style={{ marginTop: sp(2) }}>
+          <div style={{ marginTop: sp(2) }}>
             <SMega text={s.insight} />
           </div>
         )}
