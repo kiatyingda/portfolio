@@ -362,6 +362,8 @@ function ImageSection({ s }: { s: CaseStudySection & { type: 'image' } }) {
 function PhaseSection({ s }: { s: CaseStudySection & { type: 'phase' } }) {
   const hasTopMedia = !!(s.video || (s.fullBleed && s.image))
   const hasSideImage = !!s.image && !s.fullBleed
+  const hasSideBeforeAfter = !!s.beforeAfter && !s.fullBleed
+  const hasSide = hasSideImage || hasSideBeforeAfter
   return (
     <>
       {/* Full-width media first — show the result. Skip entirely if there's no media. */}
@@ -385,7 +387,7 @@ function PhaseSection({ s }: { s: CaseStudySection & { type: 'phase' } }) {
       {/* Then the narrative. Media-free phases get top gap here instead of on the media block. */}
       <section className="aino-section" style={{ marginTop: hasTopMedia ? sp(3) : gapTop(s.gap) }}>
         <div className="aino-inner items-start">
-          <div className={hasSideImage ? 'col-span-6 md:col-span-3' : 'col-span-6 md:col-span-4'}>
+          <div className={hasSide ? 'col-span-6 md:col-span-3' : 'col-span-6 md:col-span-4'}>
             {s.label && <SLabel label={s.label} />}
             {s.heading && <h2 className="font-display font-normal text-[22px] md:text-[28px] leading-[1.2] mb-5 max-w-[440px]" style={{ color: 'var(--text)' }}>{s.heading}</h2>}
             <SBody body={s.body} />
@@ -399,6 +401,19 @@ function PhaseSection({ s }: { s: CaseStudySection & { type: 'phase' } }) {
           {hasSideImage && (
             <div className={`col-span-6 md:col-span-3 ${s.imageLeft ? 'md:order-first' : ''}`}>
               <ImagePlaceholder aspect="video" device="mobile" src={s.image} />
+            </div>
+          )}
+          {hasSideBeforeAfter && s.beforeAfter && (
+            <div className={`col-span-6 md:col-span-3 ${s.imageLeft ? 'md:order-first' : ''}`}>
+              <div style={{ maxWidth: 350 }}>
+                <BeforeAfter
+                  before={s.beforeAfter.before}
+                  after={s.beforeAfter.after}
+                  beforeLabel={s.beforeAfter.beforeLabel}
+                  afterLabel={s.beforeAfter.afterLabel}
+                  device={s.beforeAfter.device ?? 'phone'}
+                />
+              </div>
             </div>
           )}
         </div>

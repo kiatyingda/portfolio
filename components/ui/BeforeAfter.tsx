@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState, useCallback, useEffect } from 'react'
-// Note: divider tracks the pointer on hover — no click/drag required.
 
 interface BeforeAfterProps {
   before: string
@@ -10,14 +9,15 @@ interface BeforeAfterProps {
   afterLabel?: string
   device?: 'ipad' | 'phone' | 'none'
   className?: string
-  /** Force a fixed aspect ratio on the frame (e.g. '16/10', '1/1'). */
   aspectRatio?: string
-  /** How images fit inside the frame when aspectRatio is set. 'cover' crops; 'contain' letterboxes. Default: 'cover'. */
   fit?: 'cover' | 'contain'
 }
 
 // Skew angle in degrees — how much the divider leans
 const SKEW = 8
+// Extra % to extend tracking beyond each container edge so the divider fully exits before you hit the wall
+const EXTEND = 12
+const LERP_SPEED = 0.15
 
 export default function BeforeAfter({
   before,
@@ -31,20 +31,54 @@ export default function BeforeAfter({
 }: BeforeAfterProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState(50)
+  const [isHovering, setIsHovering] = useState(false)
   const [beforeLoaded, setBeforeLoaded] = useState(false)
   const [afterLoaded, setAfterLoaded] = useState(false)
 
+  // LERP animation refs — avoid triggering re-renders per frame
+  const targetPos = useRef(50)
+  const currentPos = useRef(50)
+  const animRef = useRef<number | null>(null)
+
+  const animateLerp = useCallback(() => {
+    const diff = targetPos.current - currentPos.current
+    if (Math.abs(diff) < 0.05) {
+      currentPos.current = targetPos.current
+      setPos(targetPos.current)
+      animRef.current = null
+      return
+    }
+    currentPos.current += diff * LERP_SPEED
+    setPos(currentPos.current)
+    animRef.current = requestAnimationFrame(animateLerp)
+  }, [])
+
+  // Position formula mirrors impeccable.style:
+  // mapping container width → [-EXTEND%, 100+EXTEND%] so the cursor reaching
+  // either edge already drives the divider fully off-screen
   const updatePos = useCallback((clientX: number) => {
     const el = containerRef.current
     if (!el) return
     const rect = el.getBoundingClientRect()
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width))
-    setPos((x / rect.width) * 100)
-  }, [])
+    const pct = ((clientX - rect.left) / rect.width) * (100 + 2 * EXTEND) - EXTEND
+    targetPos.current = pct
+    if (!animRef.current) {
+      animRef.current = requestAnimationFrame(animateLerp)
+    }
+  }, [animateLerp])
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    updatePos(e.clientX)
-  }, [updatePos])
+  // Global pointermove while hovering — cursor can travel outside the component
+  useEffect(() => {
+    if (!isHovering) return
+    const handler = (e: PointerEvent) => updatePos(e.clientX)
+    window.addEventListener('pointermove', handler)
+    return () => window.removeEventListener('pointermove', handler)
+  }, [isHovering, updatePos])
+
+  // Cancel RAF on unmount
+  useEffect(() => {
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
+  }, [])
 
   // Preload images
   useEffect(() => {
@@ -53,7 +87,6 @@ export default function BeforeAfter({
   }, [before, after])
 
   // Slanted clip-path: a parallelogram leaning right by SKEW degrees
-  // tan(8°) ≈ 0.1405 — the horizontal offset as fraction of height
   const skewOffset = Math.tan((SKEW * Math.PI) / 180) * 100 // in % of height
   const beforeClip = `polygon(0 0, calc(${pos}% + ${skewOffset / 2}vh) 0, calc(${pos}% - ${skewOffset / 2}vh) 100%, 0 100%)`
   const afterClip = `polygon(calc(${pos}% + ${skewOffset / 2}vh) 0, 100% 0, 100% 100%, calc(${pos}% - ${skewOffset / 2}vh) 100%)`
@@ -63,7 +96,8 @@ export default function BeforeAfter({
       ref={containerRef}
       className={`relative w-full select-none overflow-hidden ${device === 'none' ? 'rounded-[4px]' : ''}`}
       style={{ cursor: 'ew-resize' }}
-      onPointerMove={onPointerMove}
+      onPointerEnter={() => setIsHovering(true)}
+      onPointerLeave={() => setIsHovering(false)}
     >
       {/* After image (full, background) */}
       <div className="relative w-full" style={aspectRatio ? { aspectRatio } : undefined}>
@@ -131,7 +165,7 @@ export default function BeforeAfter({
         />
       </div>
 
-      {/* Handle circle on the divider */}
+      {/* Handle on the divider */}
       <div
         className="absolute z-30 pointer-events-none"
         style={{

@@ -242,8 +242,14 @@ export const projects: Project[] = [
           number: '02',
           heading: 'Post-booking prompt — what shipped and what broke.',
           body: 'Bottom sheet prompted users to add more ride types when drivers were scarce. Three things broke: trust violation, inconsistent triggering, 0.8% user freeze rate.',
-          result: 'Replaced opaque bundles with explicit ride types. Rewrote copy with content designer. Added timer-based auto-proceed CTA.',
-          image: '/images/grab-phase-2.png',
+          result: 'Rewrote copy with a content designer — "Add other ride types to your search?" instead of "Book from more ride types?" to frame it as helping, not upselling. Replaced the opaque bundle (hidden fare range) with each ride type and its own fare shown explicitly. Added a timer-based CTA so users who hesitated got moved forward automatically.',
+          beforeAfter: {
+            before: '/images/grab-phase-2-before.png',
+            after: '/images/grab-phase-2-after.png',
+            beforeLabel: 'Shipped',
+            afterLabel: 'Fixed',
+            device: 'phone',
+          },
           imageLeft: true,
         },
         {
@@ -256,6 +262,25 @@ export const projects: Project[] = [
           body: 'Checkboxes on the ride type list. Users explicitly choose which services to accept before booking. Required the rebuilt allocation engine.',
           result: 'Smaller icons, right-aligned checkboxes, improved density.',
           image: '/images/grab-phase-3.png',
+        },
+        {
+          type: 'grid',
+          bg: 'light',
+          gap: 'wide',
+          label: 'Glossary',
+          heading: 'Interaction + UI details.',
+          items: [
+            {
+              title: 'MTT',
+              body: 'Placeholder — describe this interaction.',
+              video: '/videos/grab-mtt.mov',
+            },
+            {
+              title: 'Auto-proceed timer',
+              body: 'Countdown CTA that auto-advances users who freeze on the bottom sheet. Contributed the button specs to the design system so other teams could reuse the pattern.',
+              image: '/images/grab-glossary-timer.png',
+            },
+          ],
         },
         {
           type: 'outcome',
