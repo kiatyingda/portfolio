@@ -1,10 +1,12 @@
+'use client'
+
 export default function Hero() {
   return (
     <section data-bg="light" className="grain relative min-h-[100svh] flex items-center overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
 
-      {/* ASCII field — fills section, dense block in center with soft edges.
-          filter: invert(1) flips the iframe's monochrome content so white bg + dark
-          particles render over the light section (matching the rest of the page). */}
+      {/* ASCII rain — ambient keyword field as textural backdrop. Invert +
+          multiply pushes the iframe's white-on-black render onto the light
+          section as grey chars against white. */}
       <iframe
         src="/ascii/ascii-shape.html"
         className="absolute inset-0 w-full h-full"
@@ -17,6 +19,7 @@ export default function Hero() {
         title="ASCII Background"
         loading="eager"
         tabIndex={-1}
+        onFocus={(e) => e.currentTarget.blur()}
       />
 
     </section>
