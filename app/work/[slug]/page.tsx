@@ -510,7 +510,8 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
 
       {/* ── Hero video first — Aino Gulled style ─────────────── */}
       {/* Exactly one viewport tall. Fit modes:
-         - 'actual' → intrinsic pixel size, overflow cropped (used for landscape videos that fit naturally)
+         - 'actual' → fixed 1500px width (landscape videos sized heuristically)
+         - 'fill'   → fills viewport height at native resolution, crisp, no CSS upscale
          - 'phone'  → wrapped in a phone device frame (matches MobileMediaBlock aesthetic)
          - default  → contained inside viewport (max height 100%, max width 70%) */}
       {project.heroVideo && (
@@ -528,17 +529,21 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
             }}>
               <video
                 src={project.heroVideo}
-                autoPlay loop muted playsInline
+                autoPlay muted playsInline
+                loop={project.heroVideoLoop !== false}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
             </div>
           ) : (
             <video
               src={project.heroVideo}
-              autoPlay loop muted playsInline
+              autoPlay muted playsInline
+              loop={project.heroVideoLoop !== false}
               style={
                 project.heroVideoFit === 'actual'
                   ? { width: '1500px', height: 'auto', maxWidth: 'none', maxHeight: 'none', display: 'block', flexShrink: 0 }
+                  : project.heroVideoFit === 'fill'
+                  ? { maxHeight: '100%', maxWidth: '100%', width: 'auto', height: 'auto', display: 'block' }
                   : { maxHeight: '100%', maxWidth: '70%', width: 'auto', height: 'auto', display: 'block' }
               }
             />

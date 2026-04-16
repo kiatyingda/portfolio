@@ -10,8 +10,10 @@ export interface ProjectMeta {
   coverImage: string
   splineUrl?: string
   heroVideo?: string
-  /** How to size the hero video. 'contain' (default) fits inside the viewport; 'actual' renders at intrinsic pixel size; 'phone' wraps it in a phone device frame. */
-  heroVideoFit?: 'contain' | 'actual' | 'phone'
+  /** How to size the hero video. 'contain' (default) fits inside the viewport; 'actual' renders at a fixed 1500px width; 'fill' fills the viewport height at native resolution; 'phone' wraps it in a phone device frame. */
+  heroVideoFit?: 'contain' | 'actual' | 'fill' | 'phone'
+  /** Whether the hero video should loop. Default true. */
+  heroVideoLoop?: boolean
   accent?: string
 }
 
@@ -291,7 +293,8 @@ export const projects: Project[] = [
     summary: 'Staking, boosts, multipliers — most competitors buried the complexity. I made it the product.',
     coverImage: '/images/okx-cover.png',
     heroVideo: '/videos/okx-cover.mov',
-    heroVideoFit: 'actual',
+    heroVideoFit: 'fill',
+    heroVideoLoop: false,
     caseStudy: {
       label: 'Case Study · 2023–2025',
       role: 'Lead Product Designer → Interim Team Lead',
