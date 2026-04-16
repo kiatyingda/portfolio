@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { getProjectBySlug, projects, type CaseStudySection } from '@/content/projects'
+import { getProjectBySlug, projects, visibleProjects, type CaseStudySection } from '@/content/projects'
 import ImagePlaceholder, { MiniPhoneSketch } from '@/components/ui/ImagePlaceholder'
 import FadeIn from '@/components/ui/FadeIn'
 import ConceptGrid from '@/components/sections/ConceptGrid'
@@ -607,9 +607,18 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
       ))}
 
       {/* ── Prev / Next navigation ──────────────────────────── */}
+      {/* Nav walks only visible projects so hidden case studies are skipped.
+          If the current slug is itself hidden (direct URL), the nav falls back
+          to the first/last visible project so the links still go somewhere. */}
       {(() => {
-        const prevProject = currentIdx > 0 ? projects[currentIdx - 1] : projects[projects.length - 1]
-        const nextProject = currentIdx < projects.length - 1 ? projects[currentIdx + 1] : projects[0]
+        const visibleIdx = visibleProjects.findIndex((p) => p.slug === slug)
+        const visTotal = visibleProjects.length
+        const prevProject = visibleIdx > 0
+          ? visibleProjects[visibleIdx - 1]
+          : visibleProjects[visTotal - 1]
+        const nextProject = visibleIdx >= 0 && visibleIdx < visTotal - 1
+          ? visibleProjects[visibleIdx + 1]
+          : visibleProjects[0]
         return (
           <section className="aino-section" style={{ marginTop: sp(8), paddingBottom: sp(6), borderTop: '1px solid var(--border)' }}>
             <div className="aino-inner" style={{ paddingTop: sp(3) }}>

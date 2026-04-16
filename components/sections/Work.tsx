@@ -6,7 +6,7 @@ import FadeIn from '@/components/ui/FadeIn'
 import AsciiImageReveal from '@/components/ui/AsciiImageReveal'
 import ShuffleText from '@/components/ui/ShuffleText'
 import BracketLink from '@/components/ui/BracketLink'
-import { projects } from '@/content/projects'
+import { visibleProjects as projects } from '@/content/projects'
 
 function projectCode(slug: string, year: string): string {
   // Extract last 4-digit year from range like "2021–2024" or "2024"
@@ -73,7 +73,9 @@ export default function Work() {
 
       {/* Filmstrip: horizontal row of projects */}
       <div className="px-4 md:px-8 lg:px-10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-3 md:gap-x-4 gap-y-10">
+        {/* Grid col count should match visible project count to avoid left-clustered imbalance.
+            Currently 3 visible (Grab / OKX / SingHealth). Bump when unhiding projects. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-x-3 md:gap-x-6 gap-y-10">
           {projects.map((project, i) => (
             <ProjectCell key={project.slug} project={project} index={i} />
           ))}

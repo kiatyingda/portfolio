@@ -14,6 +14,8 @@ export interface ProjectMeta {
   heroVideoFit?: 'contain' | 'actual' | 'fill' | 'phone'
   /** Whether the hero video should loop. Default true. */
   heroVideoLoop?: boolean
+  /** Hide from the home grid and case-study prev/next nav (but keep data + direct URL working). */
+  hidden?: boolean
   accent?: string
 }
 
@@ -566,6 +568,7 @@ export const projects: Project[] = [
   // ── 4. ION Orchard ────────────────────────────────────────────────────────
   {
     slug: 'ion-orchard',
+    hidden: true,
     title: 'ION Orchard',
     company: '2359 Media',
     year: '2018–2019',
@@ -681,6 +684,7 @@ export const projects: Project[] = [
   // ── 5. Roda WhatsApp Chatbot ──────────────────────────────────────────────
   {
     slug: 'roda-chatbot',
+    hidden: true,
     title: 'Roda WhatsApp Chatbot',
     company: 'Grab',
     year: '2022',
@@ -778,6 +782,9 @@ export const projects: Project[] = [
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Projects shown in the home grid + used for case-study prev/next nav. */
+export const visibleProjects: Project[] = projects.filter((p) => !p.hidden)
 
 export function getProjectBySlug(slug: string): Project | undefined {
   return projects.find((p) => p.slug === slug)
