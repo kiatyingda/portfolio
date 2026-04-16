@@ -290,6 +290,8 @@ export const projects: Project[] = [
     category: 'Web3 · Growth',
     summary: 'Staking, boosts, multipliers — most competitors buried the complexity. I made it the product.',
     coverImage: '/images/okx-cover.png',
+    heroVideo: '/videos/okx-cover.mov',
+    heroVideoFit: 'actual',
     caseStudy: {
       label: 'Case Study · 2023–2025',
       role: 'Lead Product Designer → Interim Team Lead',
