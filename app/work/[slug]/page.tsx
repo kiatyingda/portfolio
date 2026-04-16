@@ -302,10 +302,11 @@ function QuotesSection({ s }: { s: CaseStudySection & { type: 'quotes' } }) {
 // Aligns to the image width above and breathes instead of crushing.
 function ImageCaption({ label, caption, center }: { label?: string; caption?: string; center?: boolean }) {
   if (!caption) return null
+  // Label sits ABOVE the caption (matches SLabel convention elsewhere), never beside.
   return (
-    <div className={`flex flex-col md:flex-row md:items-baseline gap-2 md:gap-8 mt-5 ${center ? 'justify-center text-center md:text-left' : ''}`}>
+    <div className={`flex flex-col gap-3 mt-5 ${center ? 'items-center text-center' : ''}`}>
       {label && (
-        <p className="shrink-0 md:w-[140px]"><span className="font-mono text-[10px] font-bold tracking-[0.12em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ {label} ]</span></p>
+        <p><span className="font-mono text-[10px] font-bold tracking-[0.12em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ {label} ]</span></p>
       )}
       <p className="font-display text-[13px] md:text-[14px] font-normal leading-[1.6] tracking-[0.02em] max-w-[720px]" style={{ color: 'var(--text-3)' }}>
         {caption}
@@ -315,6 +316,21 @@ function ImageCaption({ label, caption, center }: { label?: string; caption?: st
 }
 
 function ImageSection({ s }: { s: CaseStudySection & { type: 'image' } }) {
+  // Full-bleed path — image spans the full viewport width, caption sits back in the content column.
+  if (s.fullBleed && s.image) {
+    return (
+      <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+        <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', position: 'relative' }}>
+          <img src={s.image} alt={s.caption || s.label || ''} style={{ width: '100%', height: 'auto', display: 'block', backgroundColor: 'var(--bg-2)' }} loading="lazy" />
+        </div>
+        {(s.label || s.caption) && (
+          <div className="aino-inner-wide">
+            <ImageCaption label={s.label} caption={s.caption} />
+          </div>
+        )}
+      </section>
+    )
+  }
   return (
     <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
       <div className="aino-inner-wide">
