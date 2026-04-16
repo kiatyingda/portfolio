@@ -41,7 +41,7 @@ export const siteConfig = {
         bullets: [
           'Booking flow redesign — ~1M gain in revenue over one year',
           'Ads & cross-sell playbook with considerable revenue impact',
-          'Duxton Ambassador — contributed to company-wide design vision and solutions',
+          'Selected by the Head of Design — 1 of 6 from 100+ designers — to shape company-wide product design direction and roadmap.',
           'Mentored senior ICs to raise their craft across the design org',
         ],
         link: '/work/grab-multiple-ride-types',

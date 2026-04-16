@@ -87,10 +87,13 @@ function ConceptCard({ item }: { item: ConceptItem }) {
 
 export default function ConceptGrid({ items, cols }: ConceptGridProps) {
   const colClass = cols === 2 ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'
+  const isOddIn2Col = cols === 2 && items.length % 2 !== 0
   return (
     <div className={`grid grid-cols-1 ${colClass} gap-4 mt-10`}>
       {items.map((item, i) => (
-        <ConceptCard key={i} item={item} />
+        <div key={i} className={isOddIn2Col && i === items.length - 1 ? 'md:col-span-2' : ''}>
+          <ConceptCard item={item} />
+        </div>
       ))}
     </div>
   )

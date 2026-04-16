@@ -53,6 +53,7 @@ export interface CaseStudySection {
   left?: { heading: string; body: string }
   right?: { heading: string; body: string }
   options?: { label: string; description: string; outcome?: string; image?: string }[]
+  cols?: number
   beforeAfter?: { before: string; after: string; beforeLabel?: string; afterLabel?: string; device?: 'ipad' | 'phone' | 'none' }
   imageHint?: string
   imageHintLeft?: string
@@ -267,8 +268,9 @@ export const projects: Project[] = [
           type: 'grid',
           bg: 'light',
           gap: 'wide',
-          label: 'Glossary',
+          label: 'Details',
           heading: 'Interaction + UI details.',
+          cols: 2,
           items: [
             {
               title: 'MTT',
@@ -279,6 +281,11 @@ export const projects: Project[] = [
               title: 'Auto-proceed timer',
               body: 'Countdown CTA that auto-advances users who freeze on the bottom sheet. Contributed the button specs to the design system so other teams could reuse the pattern.',
               image: '/images/grab-glossary-timer.png',
+            },
+            {
+              title: 'Allocation experience',
+              body: 'Placeholder — describe this detail.',
+              image: '/images/Allocation experience.png',
             },
           ],
         },
