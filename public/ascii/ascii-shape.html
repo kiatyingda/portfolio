@@ -570,7 +570,11 @@ function animate(timestamp) {
 
     if (y < -50 || y > H + 50 || x < -50 || x > W + 50) continue
 
-    const a = ALPHA_LUT[dark[i]]
+    let a = ALPHA_LUT[dark[i]]
+    if (isJoiner[i] && assemblyPhase !== 'idle') {
+      // Boost name letters toward full opacity so they read darker within the same field
+      a = a + (1.0 - a) * assemblyProgress
+    }
     if (a !== lastA) { ctx.globalAlpha = a; lastA = a }
 
     // Joiners swap to their target letter once the magnetic pull is past the

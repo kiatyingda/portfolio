@@ -304,7 +304,7 @@ function ImageCaption({ label, caption, center }: { label?: string; caption?: st
   if (!caption) return null
   // Label sits ABOVE the caption (matches SLabel convention elsewhere), never beside.
   return (
-    <div className={`flex flex-col gap-3 mt-5 ${center ? 'items-center text-center' : ''}`}>
+    <div className={`flex flex-col gap-3 mt-8 ${center ? 'items-center text-center' : ''}`}>
       {label && (
         <p><span className="font-mono text-[10px] font-bold tracking-[0.12em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ {label} ]</span></p>
       )}

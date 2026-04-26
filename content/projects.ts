@@ -39,7 +39,7 @@ export interface CaseStudySection {
   columns?: { heading: string; body: string }[]
   stats?: { value: string; label: string }[]
   insight?: string
-  items?: { title: string; body: string; status?: 'winner' | 'tested' | ''; image?: string; video?: string }[]
+  items?: { title: string; body: string; status?: 'winner' | 'tested' | ''; image?: string; video?: string; animation?: 'ride-type-select' }[]
   quotes?: { text: string; context: string; source?: { name: string; logo?: string } }[]
   caption?: string
   number?: string
@@ -127,7 +127,7 @@ export const projects: Project[] = [
           gap: 'tight',
           stats: [
             { value: '78%', label: 'of unfulfilled users cancelled and rebooked within 30 min' },
-            { value: '90%', label: 'rebooked at a similar price — so cost wasn\'t the blocker' },
+            { value: '90%', label: 'rebooked at a similar price' },
           ],
           insight:
             'Users were already switching manually — cancel, wait, rebook. My goal was to make this feel frictionless.',
@@ -262,7 +262,14 @@ export const projects: Project[] = [
           heading: 'Pre-booking multi-select.',
           body: 'Checkboxes on the ride type list. Users explicitly choose which services to accept before booking. Required the rebuilt allocation engine.',
           result: 'Smaller icons, right-aligned checkboxes, improved density.',
-          image: '/images/grab-phase-3.png',
+          beforeAfter: {
+            before: '/images/grab-phase-3-before.png',
+            after: '/images/grab-phase-3-after.png',
+            beforeLabel: 'Pre-booking',
+            afterLabel: 'Post-booking',
+            device: 'phone',
+            imageLeft: true,
+          },
         },
         {
           type: 'grid',
@@ -273,8 +280,8 @@ export const projects: Project[] = [
           cols: 2,
           items: [
             {
-              title: 'MTT',
-              body: 'Placeholder — describe this interaction.',
+              title: 'Using motion for delight',
+              body: 'Single ride type selected → checkmark → multiple ride types. Motion communicates the state change without a word.',
               video: '/videos/grab-mtt.mov',
             },
             {
@@ -284,8 +291,13 @@ export const projects: Project[] = [
             },
             {
               title: 'Allocation experience',
-              body: 'Placeholder — describe this detail.',
+              body: 'Designing for complex states.',
               image: '/images/Allocation experience.png',
+            },
+            {
+              title: 'Interaction framework for Ad banners',
+              body: '',
+              video: '/videos/grab-banner.mov',
             },
           ],
         },
@@ -339,7 +351,7 @@ export const projects: Project[] = [
       team: '1 PM · 2 Designers · Frontend Engineers · Growth Team',
       duration: '2023 – 2025',
       impact: [
-        { value: '47%', label: 'of OKX overall DEX gross revenue' },
+        { value: '70%', label: 'of overall Web3 gross revenue' },
         { value: '~$4B', label: 'Trading volume facilitated' },
       ],
       sections: [
@@ -426,14 +438,7 @@ export const projects: Project[] = [
           type: 'image',
           bg: 'light',
           gap: 'wide',
-          image: '/images/okx-boost-web.png',
-          label: 'Boost Web · MVP',
-          caption: 'The core product — progressive disclosure for secondary detail, critical information kept upfront to earn trust.',
-        },
-        {
-          type: 'image',
-          bg: 'light',
-          gap: 'wide',
+          fullBleed: true,
           image: '/images/okx-campaign-system.png',
           label: 'Campaign system',
           caption: 'X Launch · X Campaign · X Stake — one modular system, different mechanics, user intents, and information needs.',
@@ -444,7 +449,7 @@ export const projects: Project[] = [
           gap: 'wide',
           label: 'Results',
           impact: [
-            { value: '47%', label: 'of OKX overall DEX gross revenue' },
+            { value: '70%', label: 'of overall Web3 gross revenue' },
             { value: '+60%', label: 'first-time traders from Boost' },
             { value: '+50%', label: 'first-time active users from Boost' },
             { value: '64%', label: 'DAT from Boost' },
@@ -459,11 +464,7 @@ export const projects: Project[] = [
             },
             {
               title: 'Progressive disclosure as hypothesis',
-              body: 'We never proved it. That\'s the gap I own. Instrument first, debate later.',
-            },
-            {
-              title: 'Design leadership under pressure',
-              body: 'Holding your position isn\'t the same as having an opinion. As interim team lead, I\'m now accountable for that call — not just arguing for it.',
+              body: 'We never proved it. That\'s the gap I own.',
             },
           ],
         },
@@ -473,6 +474,7 @@ export const projects: Project[] = [
 
   // ── 3. SingHealth ─────────────────────────────────────────────────────────
   {
+    hidden: true, // remove this line to show
     slug: 'singhealth',
     title: 'SingHealth MyCare',
     company: 'SingHealth',

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { MiniPhoneSketch } from '@/components/ui/ImagePlaceholder'
+import RideTypeMotion from '@/components/ui/RideTypeMotion'
 
 interface ConceptItem {
   title: string
@@ -9,6 +10,7 @@ interface ConceptItem {
   status?: 'winner' | 'tested' | ''
   image?: string
   video?: string
+  animation?: 'ride-type-select'
 }
 
 interface ConceptGridProps {
@@ -34,12 +36,14 @@ function ConceptCard({ item }: { item: ConceptItem }) {
 
   return (
     <div
-      className="p-6 border border-th-border relative text-left group hover:bg-th-bg2 transition-colors duration-200 flex flex-col"
+      className="p-6 border border-th-border relative text-left group hover:bg-th-bg2 transition-colors duration-200 flex flex-col h-full"
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
     >
       <div className="flex-1 mb-4 flex justify-center items-center">
-        {item.video ? (
+        {item.animation === 'ride-type-select' && !hovered ? (
+          <RideTypeMotion />
+        ) : item.video ? (
           // Phone frame — only for videos (device interactions)
           <div style={{
             maxWidth: '220px',
@@ -91,7 +95,7 @@ export default function ConceptGrid({ items, cols }: ConceptGridProps) {
   return (
     <div className={`grid grid-cols-1 ${colClass} gap-4 mt-10`}>
       {items.map((item, i) => (
-        <div key={i} className={isOddIn2Col && i === items.length - 1 ? 'md:col-span-2' : ''}>
+        <div key={i} className={`h-full flex flex-col${isOddIn2Col && i === items.length - 1 ? ' md:col-span-2' : ''}`}>
           <ConceptCard item={item} />
         </div>
       ))}

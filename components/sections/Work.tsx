@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import FadeIn from '@/components/ui/FadeIn'
 import AsciiImageReveal from '@/components/ui/AsciiImageReveal'
 import ShuffleText from '@/components/ui/ShuffleText'
 import BracketLink from '@/components/ui/BracketLink'
-import { visibleProjects as projects } from '@/content/projects'
+import { visibleProjects, projects as allProjects } from '@/content/projects'
 
 function projectCode(slug: string, year: string): string {
   // Extract last 4-digit year from range like "2021–2024" or "2024"
@@ -60,6 +60,20 @@ function ProjectCell({ project, index }: { project: typeof projects[0]; index: n
 
 export default function Work() {
   const [activeIndex] = useState(0)
+  const [showAll, setShowAll] = useState(false)
+
+  useEffect(() => {
+    setShowAll(localStorage.getItem('showAllProjects') === '1')
+  }, [])
+
+  const projects = showAll ? allProjects : visibleProjects
+
+  const toggleAll = () => {
+    const next = !showAll
+    setShowAll(next)
+    localStorage.setItem('showAllProjects', next ? '1' : '0')
+  }
+
   const pad2 = (n: number) => String(n).padStart(2, '0')
   const total = projects.length
 
@@ -68,7 +82,7 @@ export default function Work() {
 
       {/* Top label */}
       <div className="px-4 md:px-8 lg:px-10 pt-16 md:pt-24 pb-8">
-        <p><span className="font-mono text-[14px] md:text-[16px] font-bold tracking-[0.14em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ SELECTED WORK ]</span></p>
+        <p><span className="font-mono text-[14px] md:text-[16px] font-bold tracking-[0.14em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ CASE STUDIES ]</span></p>
       </div>
 
       {/* Filmstrip: horizontal row of projects */}
@@ -99,6 +113,13 @@ export default function Work() {
           <div className="flex items-center gap-4">
             <BracketLink href="https://linkedin.com/in/kiatyingda" external>LinkedIn</BracketLink>
             <BracketLink href="mailto:kiat.yingda@gmail.com">Contact</BracketLink>
+            <button
+              onClick={toggleAll}
+              className="font-mono text-[10px] tracking-[0.12em] opacity-20 hover:opacity-70 transition-opacity"
+              style={{ color: 'var(--text)' }}
+            >
+              {showAll ? '[ − ]' : '[ + ]'}
+            </button>
           </div>
         </div>
       </div>
