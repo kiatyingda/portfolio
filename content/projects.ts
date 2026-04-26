@@ -262,13 +262,13 @@ export const projects: Project[] = [
           heading: 'Pre-booking multi-select.',
           body: 'Checkboxes on the ride type list. Users explicitly choose which services to accept before booking. Required the rebuilt allocation engine.',
           result: 'Smaller icons, right-aligned checkboxes, improved density.',
+          imageLeft: true,
           beforeAfter: {
             before: '/images/grab-phase-3-before.png',
             after: '/images/grab-phase-3-after.png',
             beforeLabel: 'Pre-booking',
             afterLabel: 'Post-booking',
             device: 'phone',
-            imageLeft: true,
           },
         },
         {

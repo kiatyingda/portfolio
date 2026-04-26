@@ -15,7 +15,7 @@ function projectCode(slug: string, year: string): string {
   return `${slug.toUpperCase()}_KY_${yr}`
 }
 
-function ProjectCell({ project, index }: { project: typeof projects[0]; index: number }) {
+function ProjectCell({ project, index }: { project: typeof visibleProjects[0]; index: number }) {
   return (
     <FadeIn delay={index * 40} className="flex flex-col h-full">
       {/* Top label: ► TITLE */}
