@@ -12,6 +12,8 @@ interface BracketLinkProps {
   blended?: boolean
   /** Explicit foreground color (e.g. nav sets pure '#000' or '#fff' based on current section). */
   fg?: string
+  /** Append a right-arrow icon after the text — for CTA links. */
+  arrow?: boolean
 }
 
 function shuffleString(str: string): string {
@@ -23,7 +25,7 @@ function shuffleString(str: string): string {
   return arr.join('')
 }
 
-export default function BracketLink({ href, children, className = '', external, blended, fg }: BracketLinkProps) {
+export default function BracketLink({ href, children, className = '', external, blended, fg, arrow }: BracketLinkProps) {
   const [display, setDisplay] = useState(children)
   const [hovered, setHovered] = useState(false)
   const frameRef = useRef<NodeJS.Timeout>()
@@ -74,7 +76,10 @@ export default function BracketLink({ href, children, className = '', external, 
   }
 
   const inner = (
-    <span className="px-1.5 py-0.5 inline-block">[{display}]</span>
+    <span className="px-1.5 py-0.5 inline-block">
+      {display}
+      {arrow && <span className="ml-2">→</span>}
+    </span>
   )
 
   if (external) {

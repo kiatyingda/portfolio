@@ -7,7 +7,7 @@ export interface ProjectMeta {
   year: string
   category: string
   summary: string
-  coverImage: string
+  coverImage?: string
   splineUrl?: string
   heroVideo?: string
   /** How to size the hero video. 'contain' (default) fits inside the viewport; 'actual' renders at a fixed 1500px width; 'fill' fills the viewport height at native resolution; 'phone' wraps it in a phone device frame. */
@@ -31,6 +31,7 @@ export interface CaseStudySection {
     | 'phase'
     | 'comparison'
     | 'outcome'
+    | 'chapter'
   bg: 'dark' | 'light'
   label?: string
   heading?: string
@@ -66,6 +67,14 @@ export interface CaseStudySection {
   imageLeft?: boolean
   /** Override the section's top gap. 'tight' cuddles to previous section (same thought). 'wide' pauses (new thought). */
   gap?: 'tight' | 'standard' | 'wide'
+  /** Chapter position-in-set marker (chapter type only). E.g., '1 of 4'. Renders as `[ 1 OF 4 ]` above the chapter number. */
+  position?: string
+  /** When true on an `image` section, render with pan/zoom controls instead of a static image. For large annotated frames where readers need to inspect details. */
+  pannable?: boolean
+  /** Container height for pannable image (e.g. '78vh'). Defaults to '78vh' if pannable is true. */
+  pannableHeight?: string
+  /** Static image thumbnail for a lightbox section. Click opens `image` (or PDF) in a fullscreen modal. */
+  thumbnailImage?: string
 }
 
 export interface CaseStudy {
@@ -91,9 +100,9 @@ export const projects: Project[] = [
     company: 'Grab',
     year: '2021–2024',
     category: 'Consumer · Marketplace',
-    summary: 'Post-COVID driver crunch. Broken marketplace. Redesigned Grab\'s booking model — across three phases.',
-    coverImage: '/images/grab-cover.png',
-    heroVideo: '/videos/mtt raw.mov',
+    summary: 'Post-COVID driver crunch. Broken marketplace. Led the ride selection system redesign — defined the information architecture, structured how users compare options. +$1M revenue, +0.4pp fulfilment.',
+    coverImage: '/images/grab-cover.jpg',
+    heroVideo: '/videos/grab/mtt raw.mov',
     heroVideoFit: 'actual',
     accent: '#00B14F',
     caseStudy: {
@@ -143,42 +152,42 @@ export const projects: Project[] = [
               body: 'User wants maximum control and comparison.',
               status: 'winner',
               image: '/images/grab-concept-1.png',
-              video: '/videos/grab-concept-1.mp4',
+              video: '/videos/grab/grab-concept-1.mp4',
             },
             {
               title: 'Fare slider',
               body: 'User only cares about fare.',
               status: 'tested',
               image: '/images/grab-concept-2.png',
-              video: '/videos/grab-concept-2.mp4',
+              video: '/videos/grab/grab-concept-2.mp4',
             },
             {
               title: 'Bundles',
               body: 'User doesn\'t want to choose.',
               status: 'tested',
               image: '/images/grab-concept-3.png',
-              video: '/videos/grab-concept-3.mp4',
+              video: '/videos/grab/grab-concept-3.mp4',
             },
             {
               title: 'Post-booking prompt',
               body: 'Multi-select as fallback, not default.',
               status: 'winner',
               image: '/images/grab-concept-4.png',
-              video: '/videos/grab-concept-4.mp4',
+              video: '/videos/grab/grab-concept-4.mp4',
             },
             {
               title: 'Intent-based (needs)',
               body: 'Needs-first mental model.',
               status: 'tested',
               image: '/images/grab-concept-5.png',
-              video: '/videos/grab-concept-5.mp4',
+              video: '/videos/grab/grab-concept-5.mp4',
             },
             {
               title: 'Intent-based (categories)',
               body: 'Fewer options, less drop-off.',
               status: 'winner',
               image: '/images/grab-concept-6.png',
-              video: '/videos/grab-concept-6.mp4',
+              video: '/videos/grab/grab-concept-6.mp4',
             },
           ],
         },
@@ -282,22 +291,12 @@ export const projects: Project[] = [
             {
               title: 'Using motion for delight',
               body: 'Single ride type selected → checkmark → multiple ride types. Motion communicates the state change without a word.',
-              video: '/videos/grab-mtt.mov',
+              video: '/videos/grab/grab-mtt.mov',
             },
             {
               title: 'Auto-proceed timer',
               body: 'Countdown CTA that auto-advances users who freeze on the bottom sheet. Contributed the button specs to the design system so other teams could reuse the pattern.',
               image: '/images/grab-glossary-timer.png',
-            },
-            {
-              title: 'Allocation experience',
-              body: 'Designing for complex states.',
-              image: '/images/Allocation experience.png',
-            },
-            {
-              title: 'Interaction framework for Ad banners',
-              body: '',
-              video: '/videos/grab-banner.mov',
             },
           ],
         },
@@ -312,20 +311,24 @@ export const projects: Project[] = [
           ],
           reflections: [
             {
-              title: 'Marketplace design',
-              body: 'The biggest UX lever was often a backend decision. I made the phased approach feel intentional, even when it was a constraint.',
+              title: 'The biggest UX call wasn\'t in the UI',
+              body: 'It was choosing which engineering constraint to design around. Phased shipping was the design — not a compromise.',
             },
             {
-              title: 'Copy = UI',
-              body: 'The content rewrite in Phase 2 drove as much improvement as the interface changes.',
+              title: 'Copy is UI',
+              body: 'The Phase 2 content rewrite moved metrics as much as the interface changes did. Pair with a content designer early, not at QA.',
             },
             {
-              title: 'Transparency > control',
-              body: 'Explicit ride types instead of opaque bundles — users value transparency over over-prescribed recommendations.',
+              title: 'Show the options, don\'t bundle them',
+              body: 'Users picked explicit ride types over opaque smart bundles. When a PM asks for a smart bundle, the un-bundled version usually wins.',
             },
             {
-              title: 'Design for the best experience',
-              body: 'Multiple-ride types underwent 3 different phases and set the foundation of a 5-year product vision.',
+              title: 'Phase 1 shipped while Phase 3 was the goal',
+              body: '3 phases over 3 years became a 5-year product direction. Each phase shipped on its own merits but pointed at the same end state.',
+            },
+            {
+              title: 'It served the ride-hailing vision',
+              body: 'Fewer services. Simpler experience. Lower operational cost. Multiple ride types collapsed parallel offerings into one decision point — one change that solved a UX, an ops, and a business problem at once.',
             },
           ],
         },
@@ -333,14 +336,151 @@ export const projects: Project[] = [
     },
   },
 
-  // ── 2. OKX Boost ─────────────────────────────────────────────────────────
+  // ── 2. Company-Wide Influence — Grab ────────────────────────────────────
+  {
+    slug: 'grab-influence',
+    title: 'Company-Wide Influence',
+    company: 'Grab',
+    year: '2021–2024',
+    category: 'Design Organisation · Frameworks',
+    summary: '1 of 6 designers from over 120, handpicked to shape Grab\'s product direction across PODs. Four contributions, three years.',
+    coverImage: '/images/company-cover.jpg',
+    accent: '#00B14F',
+    caseStudy: {
+      label: 'Frameworks · 2021–2024',
+      role: 'Lead Product Designer · Org-Level Initiative',
+      team: 'Cross-functional · Ads · Payments · Loyalty · Safety · Comms · Design Org',
+      duration: '2021 – 2024 (rolling)',
+      impact: [
+        { value: '1 of 6', label: 'Selected from 120+ designers for org-level initiatives' },
+        { value: '−4pp', label: 'Cancellation rate from visual overhaul experiment' },
+        { value: '40+', label: 'Cross-vertical issues identified · 10+ Jira tickets with ready solutions' },
+      ],
+      sections: [
+        // Four equal chapters following the deck structure (slides 90–110).
+        // Each chapter = compact chapter open (number + title + tagline + rule)
+        // followed by ONE content section. Wide gap before each chapter open,
+        // tight gap to its content. Single dark Reflections close.
+
+        // ── 01 · Company-wide design influence ────────────────────────────
+        {
+          type: 'chapter',
+          bg: 'light',
+          gap: 'wide',
+          position: '1 of 4',
+          number: '01',
+          heading: 'Company-wide design influence',
+        },
+        {
+          type: 'text',
+          bg: 'light',
+          gap: 'tight',
+          label: 'Cross-vertical quality drive',
+          heading: 'Led the design effort. Weekly readouts to Head of Design, CPO, senior leaders.',
+          body: [
+            '40+ issues identified. 10+ shipped as Jira tickets with ready design solutions.',
+            'Ran a company-wide quality drive — "Let\'s Make a Difference Together" — inviting designers across verticals to flag inconsistencies in flows they didn\'t own. Friendly competition with bubble tea on the line. Each surfaced issue came back not as a complaint but as a Jira ticket with the fix already designed. Turned a quality chore into a team ritual.',
+          ],
+        },
+        {
+          type: 'image',
+          bg: 'light',
+          gap: 'tight',
+          video: '/videos/grab/grab-broken-window.mp4',
+          fullBleed: true,
+        },
+
+        // ── 02 · Visual direction contribution ────────────────────────────
+        {
+          type: 'chapter',
+          bg: 'light',
+          gap: 'wide',
+          position: '2 of 4',
+          number: '02',
+          heading: 'Visual direction contribution',
+        },
+        // Item 1 of 3 — Visual harmony GIF (mobile-format animation)
+        {
+          type: 'image',
+          bg: 'light',
+          gap: 'tight',
+          label: 'Visual harmony',
+          image: '/images/visual-harmony.gif',
+          device: 'mobile',
+          caption: 'Cohesive visual rhythm across the whole app — colour, type, and elevation tuned to feel like one product instead of stitched-together teams.',
+        },
+        // Item 2 of 3 — Design system PDF deck (thumbnail click opens PDF lightbox)
+        {
+          type: 'image',
+          bg: 'light',
+          gap: 'wide',
+          label: 'Design systems · 3 components',
+          image: '/images/Bottomsheets.pdf',
+          thumbnailImage: '/images/Grab_bottomsheet_screen.png',
+          device: 'mobile',
+          caption: 'As a Duxton Ambassador, I coached two senior designers. Shipped Bottomsheet, Snackbar, and Avatar — used across the platform. (Bottomsheet shown.)',
+        },
+        // ── 03 · Ride-hailing vision ──────────────────────────────────────
+        {
+          type: 'chapter',
+          bg: 'light',
+          gap: 'wide',
+          position: '3 of 4',
+          number: '03',
+          heading: 'Ride-hailing vision',
+        },
+        {
+          type: 'comparison',
+          bg: 'light',
+          gap: 'tight',
+          label: 'Future-state foundation',
+          heading: 'Users overwhelmed by services → simplified by intent.',
+          body: 'The ride-hailing surface had grown into a wall of categories. The shift: stop listing services, start asking the user\'s intent ("I need a child seat because I have my child with me"). Two-designer team — I explored solutions and set the design foundation; my partner took it through prototyping and delivery. Built the scalable framework from discovery workshops with stakeholders and user-research learnings.',
+          beforeAfter: {
+            before: '/videos/grab-overwhelm.mp4',
+            after: '/videos/grab/grab-vision.mov',
+            beforeLabel: 'Current',
+            afterLabel: 'Vision',
+            device: 'phone',
+          },
+        },
+
+        // ── 04 · Cross-sell and ads playbook ──────────────────────────────
+        {
+          type: 'chapter',
+          bg: 'light',
+          gap: 'wide',
+          position: '4 of 4',
+          number: '04',
+          heading: 'Cross-sell and ads playbook',
+        },
+        // Banner video plays as the thumbnail (teases one element of the framework —
+        // the endemic ad slot). Click opens the full annotated framework SVG in a
+        // fullscreen pan/zoom lightbox for detail inspection.
+        {
+          type: 'image',
+          bg: 'light',
+          gap: 'tight',
+          label: 'In-transit Ads playbook',
+          image: '/images/Grab%20allocation%20experience.svg',
+          video: '/videos/grab/grab-banner.mov',
+          caption: 'I designed two scalable playbooks — one for ad types, one for cross-selling services. The Ads team could sell map and bottom-sheet banner slots, and the Food team could cross-sell while the user was on a ride. Continuous revenue for Grab since 2024.',
+          pannable: true,
+          pannableHeight: '81vh',
+        },
+
+      ],
+    },
+  },
+
+  // ── 3. OKX Boost ─────────────────────────────────────────────────────────
   {
     slug: 'okx-boost',
     title: 'OKX Boost',
     company: 'OKX',
     year: '2023–2025',
     category: 'Web3 · Growth',
-    summary: 'Turned complex rules into simple steps — clear for new users, still deep enough for pro traders.',
+    summary: 'Led Boost end-to-end — defined a unified on-chain incentives system that replaced fragmented growth campaigns with one scalable architecture. Shipped across 50+ Web3 projects. ~$4B trading volume, ~75% of Web3 growth revenue.',
     coverImage: '/images/okx-cover.png',
     heroVideo: '/videos/okx-cover.mov',
     heroVideoFit: 'fill',
@@ -459,12 +599,20 @@ export const projects: Project[] = [
           ],
           reflections: [
             {
+              title: 'A system, not a campaign',
+              body: 'Growth teams default to one-off campaigns. Designing Boost as a unified incentives system meant we shipped one architecture instead of 50 fragmented features. The compounding came from the system, not any single launch.',
+            },
+            {
               title: 'Restraint in financial UI',
-              body: 'Every non-essential element was a liability. The final product was far simpler than the first draft. It should have been simpler still.',
+              body: 'Every non-essential element was a liability. The final product was far simpler than the first draft. It should have been simpler still — and that bias is now my default.',
+            },
+            {
+              title: 'Architecture before aesthetics',
+              body: 'Modularity (X Launch · X Campaign · X Stake) wasn\'t a styling decision. It was the architecture call that let the team ship 50+ Web3 projects on the same chassis without redesigning each time.',
             },
             {
               title: 'Progressive disclosure as hypothesis',
-              body: 'We never proved it. That\'s the gap I own.',
+              body: 'We never validated it experimentally. That\'s the gap I own — next time the design hypothesis goes into the experiment plan, not the design review.',
             },
           ],
         },
@@ -480,7 +628,7 @@ export const projects: Project[] = [
     company: 'SingHealth',
     year: '2018–2019',
     category: 'Healthcare · Consumer',
-    summary: 'Nurses were drowning in paperwork. I designed the patient-facing app to bring digital care to Singapore\'s largest healthcare cluster — serving 4M+ patients.',
+    summary: 'Nurses drowning in paperwork. Designed the patient-facing app for Singapore\'s largest healthcare cluster from IA through launch — 4M+ patients.',
     coverImage: '/images/singhealth-cover.png',
     accent: '#E85D26',
     caseStudy: {
@@ -598,12 +746,12 @@ export const projects: Project[] = [
     slug: 'ion-orchard',
     hidden: true,
     title: 'ION Orchard',
-    company: '2359 Media',
+    company: '2359 Media Consultancy',
     year: '2018–2019',
     category: 'Consumer · Retail',
-    summary: 'A loyalty app failing its core job — confusing IA, dated UI, 70% receipt rejection rate. I restructured the experience from navigation to scanning.',
+    summary: '70% receipt rejection rate. Restructured the loyalty experience end-to-end — rebuilt the IA, redesigned core scanning and navigation.',
     coverImage: '/images/ion-cover.png',
-    heroVideo: '/videos/ion-demo.mp4',
+    heroVideo: '/videos/ion/ion-demo.mp4',
     accent: '#C4A265',
     caseStudy: {
       label: 'Case Study · 2018–2019',
@@ -717,7 +865,7 @@ export const projects: Project[] = [
     company: 'Grab',
     year: '2022',
     category: 'Consumer · Emerging Markets',
-    summary: 'Grab rides via WhatsApp for rural Indonesia — no app download needed. I designed a conversational booking experience for 500+ underserved cities.',
+    summary: 'No app, no coverage — rural Indonesia. Designed Grab\'s WhatsApp booking experience for 500+ underserved cities, no download needed.',
     coverImage: '/images/roda-chatbot-full.png',
     heroVideo: '/videos/roda-demo.mp4',
     heroVideoFit: 'phone',

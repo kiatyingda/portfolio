@@ -67,7 +67,7 @@ CSS-only. `scroll-snap-type: y proximity` with `min-h-screen` sections. No exter
 - Staggered children: heading → body → image → CTA, 80ms apart
 - Duration: 700ms ease-out (unchanged)
 - No parallax, no scroll-linked transforms
-- Uber DNA = confident restraint, hard cuts > swoopy effects
+- Confident restraint, hard cuts > swoopy effects
 
 ---
 

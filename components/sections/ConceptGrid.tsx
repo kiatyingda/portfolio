@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { MiniPhoneSketch } from '@/components/ui/ImagePlaceholder'
 import RideTypeMotion from '@/components/ui/RideTypeMotion'
 
 interface ConceptItem {
@@ -21,6 +20,7 @@ interface ConceptGridProps {
 function ConceptCard({ item }: { item: ConceptItem }) {
   const [hovered, setHovered] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const hasMedia = !!(item.animation || item.video || item.image)
 
   const handleEnter = () => {
     setHovered(true)
@@ -34,6 +34,19 @@ function ConceptCard({ item }: { item: ConceptItem }) {
     }
   }
 
+  if (!hasMedia) {
+    return (
+      <div
+        className="p-8 border border-th-border relative text-left group hover:bg-th-bg2 transition-colors duration-200 flex flex-col h-full justify-center"
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+      >
+        <p className="font-mono text-[10px] tracking-[0.12em] uppercase mb-5" style={{ color: 'var(--text-3)' }}>{item.title}</p>
+        <p className="font-display text-[17px] font-light leading-[1.55] tracking-[0.01em]" style={{ color: 'var(--text)' }}>{item.body}</p>
+      </div>
+    )
+  }
+
   return (
     <div
       className="p-6 border border-th-border relative text-left group hover:bg-th-bg2 transition-colors duration-200 flex flex-col h-full"
@@ -44,7 +57,6 @@ function ConceptCard({ item }: { item: ConceptItem }) {
         {item.animation === 'ride-type-select' && !hovered ? (
           <RideTypeMotion />
         ) : item.video ? (
-          // Phone frame — only for videos (device interactions)
           <div style={{
             maxWidth: '220px',
             border: '12px solid #000',
@@ -63,16 +75,13 @@ function ConceptCard({ item }: { item: ConceptItem }) {
             />
           </div>
         ) : item.image ? (
-          // No frame for images — show at natural size
           <img
             src={item.image}
             alt={item.title}
             className="transition-opacity duration-300 w-full"
             style={{ height: 'auto', display: 'block', opacity: hovered ? 1 : 0.7 }}
           />
-        ) : (
-          <MiniPhoneSketch />
-        )}
+        ) : null}
       </div>
       <div className="flex items-center gap-2 mb-2">
         <p className="font-mono text-[11px] tracking-[0.08em] uppercase" style={{ color: 'var(--text)' }}>{item.title}</p>

@@ -8,11 +8,12 @@ export default function Timeline() {
 
   return (
     <section id="experience" data-bg="light" className="relative">
-      <div className="w-full px-4 md:px-8 lg:px-10 pt-10 md:pt-14 pb-24 md:pb-36">
+      <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8 lg:px-10 pt-10 md:pt-14 pb-24 md:pb-36">
         <FadeIn>
-          <p className="mb-24 md:mb-32"><span className="font-mono text-[14px] md:text-[16px] font-bold tracking-[0.14em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ MY STORY ]</span></p>
+          <p className="mb-12 md:mb-16"><span className="font-mono text-[14px] md:text-[16px] font-bold tracking-[0.14em]" style={{ color: 'var(--text)' }}>[EXPERIENCE]</span></p>
         </FadeIn>
-        <FadeIn>
+
+<FadeIn>
           <div className="space-y-0">
             {about.career.map((role, i) => {
               const num = String(i + 1).padStart(2, '0')
@@ -36,7 +37,7 @@ export default function Timeline() {
                     {/* Right column — company name + bullets */}
                     <div>
                       <h3
-                        className="font-display font-normal text-[36px] md:text-[48px] lg:text-[56px] text-th-text leading-[1.08] mb-8"
+                        className="font-display font-normal text-[26px] md:text-[32px] lg:text-[36px] text-th-text leading-[1.1] mb-8"
                         style={{ letterSpacing: '0.02em' }}
                       >
                         {role.company}
@@ -44,7 +45,7 @@ export default function Timeline() {
 
                       <ul className="space-y-3 mb-6">
                         {role.bullets.map((bullet, j) => (
-                          <li key={j} className="font-display text-[13px] font-normal text-th-text2 leading-[1.6] tracking-[0.02em] flex gap-3 max-w-[520px]">
+                          <li key={j} className="font-display text-[15px] font-normal text-th-text2 leading-[1.6] tracking-[0.02em] flex gap-3 max-w-[560px]">
                             <span className="text-th-text3 mt-[5px] shrink-0 text-[8px]">—</span>
                             <span>{bullet}</span>
                           </li>
@@ -52,10 +53,7 @@ export default function Timeline() {
                       </ul>
 
                       {role.link && (
-                        <div className="inline-flex items-center gap-1.5">
-                          <span className="font-mono text-[14px] tracking-[0.1em]" style={{ color: '#000' }}>▸</span>
-                          <BracketLink href={role.link}>View work</BracketLink>
-                        </div>
+                        <BracketLink href={role.link} arrow>View work</BracketLink>
                       )}
                     </div>
                   </div>

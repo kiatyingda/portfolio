@@ -80,11 +80,26 @@ export default function BeforeAfter({
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
   }, [])
 
-  // Preload images
+  const isVideo = (src: string) => /\.(mp4|mov|webm|m4v)($|\?)/i.test(src)
+  const beforeIsVideo = isVideo(before)
+  const afterIsVideo = isVideo(after)
+
   useEffect(() => {
-    const img1 = new Image(); img1.onload = () => setBeforeLoaded(true); img1.src = before
-    const img2 = new Image(); img2.onload = () => setAfterLoaded(true); img2.src = after
-  }, [before, after])
+    if (beforeIsVideo) {
+      setBeforeLoaded(true)
+    } else {
+      const img1 = new Image(); img1.onload = () => setBeforeLoaded(true); img1.src = before
+    }
+    if (afterIsVideo) {
+      setAfterLoaded(true)
+    } else {
+      const img2 = new Image(); img2.onload = () => setAfterLoaded(true); img2.src = after
+    }
+  }, [before, after, beforeIsVideo, afterIsVideo])
+
+  // Phone device default: force portrait aspect so videos with mismatched intrinsic
+  // ratios (e.g. wide vision-overhead) don't collapse the container. Caller can override.
+  const effectiveAspectRatio = aspectRatio || (device === 'phone' ? '9 / 19.5' : undefined)
 
   // Slanted clip-path: a parallelogram leaning right by SKEW degrees
   const skewOffset = Math.tan((SKEW * Math.PI) / 180) * 100 // in % of height
@@ -99,13 +114,22 @@ export default function BeforeAfter({
       onPointerEnter={() => setIsHovering(true)}
       onPointerLeave={() => setIsHovering(false)}
     >
-      {/* After image (full, background) */}
-      <div className="relative w-full" style={aspectRatio ? { aspectRatio } : undefined}>
-        {afterLoaded ? (
+      {/* After media (full, background) */}
+      <div className="relative w-full" style={effectiveAspectRatio ? { aspectRatio: effectiveAspectRatio } : undefined}>
+        {afterIsVideo ? (
+          <video
+            src={after}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={effectiveAspectRatio ? `absolute inset-0 w-full h-full block ${fit === 'contain' ? 'object-contain' : 'object-cover'}` : 'w-full block'}
+          />
+        ) : afterLoaded ? (
           <img
             src={after}
             alt={afterLabel}
-            className={aspectRatio ? `absolute inset-0 w-full h-full block ${fit === 'contain' ? 'object-contain' : 'object-cover'}` : 'w-full block'}
+            className={effectiveAspectRatio ? `absolute inset-0 w-full h-full block ${fit === 'contain' ? 'object-contain' : 'object-cover'}` : 'w-full block'}
             draggable={false}
           />
         ) : (
@@ -113,12 +137,21 @@ export default function BeforeAfter({
         )}
       </div>
 
-      {/* Before image (slanted clip) — includes before label so it masks with the divider */}
+      {/* Before media (slanted clip) — includes before label so it masks with the divider */}
       <div
         className="absolute inset-0"
         style={{ clipPath: beforeClip }}
       >
-        {beforeLoaded ? (
+        {beforeIsVideo ? (
+          <video
+            src={before}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={`absolute inset-0 w-full h-full ${fit === 'contain' ? 'object-contain' : 'object-cover'}`}
+          />
+        ) : beforeLoaded ? (
           <img
             src={before}
             alt={beforeLabel}

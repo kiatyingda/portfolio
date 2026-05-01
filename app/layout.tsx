@@ -1,11 +1,9 @@
 import type { Metadata } from 'next'
-import { Space_Mono, Inter } from 'next/font/google'
+import { Space_Mono, Inter, Roboto } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
 import PresentationCursor from '@/components/ui/PresentationCursor'
 
-// Space Mono — monospace for EVERYTHING (carlesfaus.com uses PP Supply Mono)
-// The entire site is monospace — that's what creates the architectural feel
 const spaceMono = Space_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
@@ -13,7 +11,6 @@ const spaceMono = Space_Mono({
   display: 'swap',
 })
 
-// Heavy sans for the footer wordmark — Aino uses a massive tight-tracked sans
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
@@ -21,21 +18,29 @@ const inter = Inter({
   display: 'swap',
 })
 
+const roboto = Roboto({
+  subsets: ['latin'],
+  variable: '--font-roboto',
+  weight: ['400', '700', '900'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
-  title: 'Kiat Yingda — Product Designer',
+  title: 'Kiat Yingda — Lead Product Designer',
   description:
-    'Senior Product Designer specializing in complex consumer products at scale — healthcare, ride-hailing, Web3.',
+    'Lead product designer and builder. Led Boost at OKX (~$4B trading volume, ~75% of Web3 growth revenue). Selected 1 of 6 from 120+ designers at Grab to shape company-wide direction.',
   openGraph: {
-    title: 'Kiat Yingda — Product Designer',
+    title: 'Kiat Yingda — Lead Product Designer',
     description:
-      'Senior Product Designer specializing in complex consumer products at scale.',
+      'Lead product designer and builder. Frameworks adopted across teams. Business outcomes that compound.',
     type: 'website',
   },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${spaceMono.variable} ${inter.variable}`}>
+    <html lang="en" className={`${spaceMono.variable} ${inter.variable} ${roboto.variable}`}>
       <body className="bg-th-bg text-th-text antialiased font-mono">
         <Nav />
         <main>{children}</main>

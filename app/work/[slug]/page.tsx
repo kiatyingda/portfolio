@@ -9,6 +9,9 @@ import FluidType from '@/components/ui/FluidType'
 import BeforeAfter from '@/components/ui/BeforeAfter'
 import BracketLink from '@/components/ui/BracketLink'
 import SlideKeyboardNav from '@/components/ui/SlideKeyboardNav'
+import PanZoomFrame from '@/components/ui/PanZoomFrame'
+import PanZoomLightbox from '@/components/ui/PanZoomLightbox'
+import ClickToPlayVideo from '@/components/ui/ClickToPlayVideo'
 
 export async function generateStaticParams() {
   return projects.map((p) => ({ slug: p.slug }))
@@ -26,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 function SLabel({ label }: { label?: string }) {
   if (!label) return null
-  return <p className="mb-8"><span className="font-mono text-[12px] font-bold tracking-[0.12em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ {label} ]</span></p>
+  return <p className="mb-8"><span className="font-mono text-[12px] font-bold tracking-[0.12em]" style={{ color: 'var(--text)' }}>[ {label} ]</span></p>
 }
 
 function SMega({ text }: { text: string }) {
@@ -176,11 +179,28 @@ function TextSection({ s, index }: { s: CaseStudySection & { type: 'text' }; ind
 }
 
 function TwoColSection({ s, index }: { s: CaseStudySection & { type: 'twocol' }; index: number }) {
+  // Compact mode (gap: 'tight') = section sized to content, no full-viewport
+  // padding. Use this for chapter sub-sections so a multi-section chapter doesn't
+  // become 8 full-screen slides of mostly empty space. Chapter intros (gap:
+  // 'wide' | 'standard') keep the dramatic full-viewport slide treatment.
+  const isCompact = s.gap === 'tight'
   return (
     <>
-      {/* Full-viewport slide: content sits at ~35% from top (flex + padding)
-          so there isn't a vast empty band above the heading when centered. */}
-      <section data-slide-align="top" className="aino-section flex flex-col justify-start items-stretch" style={{ marginTop: gapTop(s.gap), minHeight: '100vh', paddingTop: '28vh' }}>
+      <section
+        data-slide-align="top"
+        className="aino-section flex flex-col justify-start items-stretch"
+        style={{
+          marginTop: gapTop(s.gap),
+          minHeight: isCompact ? undefined : '100vh',
+          paddingTop: isCompact ? sp(3) : '28vh',
+          paddingBottom: isCompact ? sp(3) : undefined,
+        }}
+      >
+        {s.label && (
+          <div className="mx-auto max-w-[1120px] px-8 w-full mb-6">
+            <SLabel label={s.label} />
+          </div>
+        )}
         {s.heading && (
           <div className="mx-auto max-w-[1120px] px-8 w-full">
             <p className="font-display font-normal text-[22px] md:text-[30px] lg:text-[36px] leading-[1.3] tracking-[0.01em]"
@@ -306,7 +326,7 @@ function ImageCaption({ label, caption, center }: { label?: string; caption?: st
   return (
     <div className={`flex flex-col gap-3 mt-8 ${center ? 'items-center text-center' : ''}`}>
       {label && (
-        <p><span className="font-mono text-[10px] font-bold tracking-[0.12em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ {label} ]</span></p>
+        <p><span className="font-mono text-[10px] font-bold tracking-[0.12em]" style={{ color: 'var(--text)' }}>[ {label} ]</span></p>
       )}
       <p className="font-display text-[13px] md:text-[14px] font-normal leading-[1.6] tracking-[0.02em] max-w-[720px]" style={{ color: 'var(--text-3)' }}>
         {caption}
@@ -316,6 +336,117 @@ function ImageCaption({ label, caption, center }: { label?: string; caption?: st
 }
 
 function ImageSection({ s }: { s: CaseStudySection & { type: 'image' } }) {
+  // Image-thumbnail lightbox — click opens an image (pan/zoom) or PDF (native
+  // iframe viewer) in a fullscreen modal. Independent of `pannable`.
+  // Phone-format thumbnails use the side-by-side layout (phone left, caption
+  // right) for visual balance; landscape thumbnails stay full-width.
+  if (s.thumbnailImage && s.image) {
+    const isMobile = s.device === 'mobile'
+    if (isMobile) {
+      return (
+        <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+          <div className="aino-inner items-start">
+            <div className="col-span-6 md:col-span-3">
+              <PanZoomLightbox
+                thumbnailImage={s.thumbnailImage}
+                expandedSrc={s.image}
+                alt={s.caption || s.label || ''}
+                thumbnailDevice="mobile"
+              />
+            </div>
+            {(s.label || s.caption) && (
+              <div className="col-span-6 md:col-span-3 md:col-start-4 mt-8 md:mt-0 md:pt-12">
+                {s.label && <SLabel label={s.label} />}
+                {s.caption && (
+                  <p
+                    className="font-display text-[14px] md:text-[15px] font-normal leading-[1.75] tracking-[0.015em]"
+                    style={{ color: 'var(--text)', maxWidth: 540 }}
+                  >
+                    {s.caption}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )
+    }
+    return (
+      <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+        <div className="aino-inner-wide">
+          <PanZoomLightbox
+            thumbnailImage={s.thumbnailImage}
+            expandedSrc={s.image}
+            alt={s.caption || s.label || ''}
+          />
+          <ImageCaption label={s.label} caption={s.caption} />
+        </div>
+      </section>
+    )
+  }
+  // Pannable path — large annotated frame with pan/zoom controls for detail inspection.
+  // If a video is also provided, use the lightbox pattern: video plays as thumbnail,
+  // clicking opens the image in a fullscreen pan/zoom lightbox.
+  if (s.pannable && s.image) {
+    // Phone thumbnail variant — pair the phone with label/caption on the side
+    // instead of centering it in an empty band.
+    if (s.video) {
+      return (
+        <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+          <div className="aino-inner items-start">
+            <div className="col-span-6 md:col-span-3">
+              <PanZoomLightbox
+                thumbnailVideo={s.video}
+                expandedSrc={s.image}
+                alt={s.caption || s.label || ''}
+                thumbnailHeight={s.pannableHeight || '78vh'}
+              />
+            </div>
+            {(s.label || s.caption) && (
+              <div className="col-span-6 md:col-span-3 md:col-start-4 mt-8 md:mt-0 md:pt-12">
+                {s.label && <SLabel label={s.label} />}
+                {s.caption && (
+                  <p
+                    className="font-display text-[14px] md:text-[15px] font-normal leading-[1.75] tracking-[0.015em]"
+                    style={{ color: 'var(--text)', maxWidth: 540 }}
+                  >
+                    {s.caption}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )
+    }
+    return (
+      <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+        <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}>
+          <PanZoomFrame src={s.image} alt={s.caption || s.label || ''} height={s.pannableHeight || '78vh'} />
+        </div>
+        {(s.label || s.caption) && (
+          <div className="aino-inner-wide">
+            <ImageCaption label={s.label} caption={s.caption} />
+          </div>
+        )}
+      </section>
+    )
+  }
+  // Full-bleed video — spans full viewport width at native aspect, click-to-play with dark overlay.
+  if (s.fullBleed && s.video) {
+    return (
+      <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+        <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', position: 'relative' }}>
+          <ClickToPlayVideo src={s.video} />
+        </div>
+        {(s.label || s.caption) && (
+          <div className="aino-inner-wide">
+            <ImageCaption label={s.label} caption={s.caption} />
+          </div>
+        )}
+      </section>
+    )
+  }
   // Full-bleed path — image spans the full viewport width, caption sits back in the content column.
   if (s.fullBleed && s.image) {
     return (
@@ -328,6 +459,30 @@ function ImageSection({ s }: { s: CaseStudySection & { type: 'image' } }) {
             <ImageCaption label={s.label} caption={s.caption} />
           </div>
         )}
+      </section>
+    )
+  }
+  // Mobile device frame with side caption — phone left, label+caption right.
+  // Used when device='mobile' AND there's a label or caption to pair with it.
+  if (s.device === 'mobile' && (s.image || s.video) && (s.label || s.caption)) {
+    return (
+      <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
+        <div className="aino-inner items-start">
+          <div className="col-span-6 md:col-span-3">
+            <MobileMediaBlock image={s.image} video={s.video} />
+          </div>
+          <div className="col-span-6 md:col-span-3 md:col-start-4 mt-8 md:mt-0 md:pt-12">
+            {s.label && <SLabel label={s.label} />}
+            {s.caption && (
+              <p
+                className="font-display text-[14px] md:text-[15px] font-normal leading-[1.75] tracking-[0.015em]"
+                style={{ color: 'var(--text)', maxWidth: 540 }}
+              >
+                {s.caption}
+              </p>
+            )}
+          </div>
+        </div>
       </section>
     )
   }
@@ -427,6 +582,7 @@ function ComparisonSection({ s }: { s: CaseStudySection & { type: 'comparison' }
     <>
       <section className="aino-section" style={{ marginTop: gapTop(s.gap) }}>
         <div className="aino-inner">
+          {s.label && <div className="col-span-6 mb-2"><SLabel label={s.label} /></div>}
           {s.heading && <div className="col-span-6 md:col-span-4 mb-4"><SMega text={s.heading} /></div>}
           {s.body && <div className="col-span-6 md:col-span-3"><SBody body={s.body} /></div>}
         </div>
@@ -465,6 +621,45 @@ function ComparisonSection({ s }: { s: CaseStudySection & { type: 'comparison' }
         </section>
       )}
     </>
+  )
+}
+
+function ChapterSection({ s }: { s: CaseStudySection & { type: 'chapter' } }) {
+  // Compact chapter open. Position marker + big number + display title + rule + tagline.
+  // Wide gap before it (chapter break); tight gap to the content section that follows.
+  return (
+    <section
+      data-slide-align="top"
+      className="aino-section"
+      style={{ marginTop: gapTop(s.gap), paddingTop: sp(2), paddingBottom: sp(2) }}
+    >
+      <div className="aino-inner">
+        <div className="col-span-6">
+          {s.position && (
+            <p className="font-mono text-[11px] tracking-[0.14em] uppercase mb-5" style={{ color: 'var(--text-3)' }}>
+              [ {s.position} ]
+            </p>
+          )}
+          {s.number && (
+            <p className="font-mono font-bold tracking-[0.04em] leading-none mb-6"
+              style={{ fontSize: 'clamp(40px, 6vw, 72px)', color: 'var(--text)' }}>{s.number}</p>
+          )}
+          {s.heading && (
+            <h2 className="font-display font-normal leading-[1.05] tracking-[-0.01em] mb-6"
+              style={{ fontSize: 'clamp(28px, 4.4vw, 56px)', color: 'var(--text)', maxWidth: '900px' }}>
+              {s.heading}
+            </h2>
+          )}
+          <div className="h-px mb-5" style={{ width: '60px', backgroundColor: 'var(--text)' }} />
+          {s.body && (
+            <p className="font-display font-light leading-[1.5] tracking-[0.01em]"
+              style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', color: 'var(--text)', maxWidth: '640px' }}>
+              {Array.isArray(s.body) ? s.body[0] : s.body}
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -518,6 +713,7 @@ function RenderSection({ section, index }: { section: CaseStudySection; index: n
       case 'phase':      return <PhaseSection s={section as CaseStudySection & { type: 'phase' }} />
       case 'comparison': return <ComparisonSection s={section as CaseStudySection & { type: 'comparison' }} />
       case 'outcome':    return <OutcomeSection s={section as CaseStudySection & { type: 'outcome' }} />
+      case 'chapter':    return <ChapterSection s={section as CaseStudySection & { type: 'chapter' }} />
       default: return null
     }
   })()
@@ -546,7 +742,7 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
          - 'phone'  → wrapped in a phone device frame (matches MobileMediaBlock aesthetic)
          - default  → contained inside viewport (max height 100%, max width 70%) */}
       {project.heroVideo && (
-        <section data-slide-align="top" data-bg="dark" style={{ backgroundColor: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '6vh 0' }}>
+        <section data-slide-align="top" data-bg="dark" style={{ backgroundColor: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '14vh 0 6vh' }}>
           {project.heroVideoFit === 'phone' ? (
             <div style={{
               height: '100%',

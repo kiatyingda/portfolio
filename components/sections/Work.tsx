@@ -3,63 +3,171 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import FadeIn from '@/components/ui/FadeIn'
-import AsciiImageReveal from '@/components/ui/AsciiImageReveal'
-import ShuffleText from '@/components/ui/ShuffleText'
-import BracketLink from '@/components/ui/BracketLink'
 import { visibleProjects, projects as allProjects } from '@/content/projects'
 
-function projectCode(slug: string, year: string): string {
-  // Extract last 4-digit year from range like "2021–2024" or "2024"
-  const match = year.match(/\d{4}(?!.*\d{4})/)
-  const yr = match ? match[0].slice(-3) : '000'
-  return `${slug.toUpperCase()}_KY_${yr}`
+// Display metric per project. Editorial stack puts this at receipt-scale, not caption-scale.
+function projectMetric(slug: string): string {
+  switch (slug) {
+    case 'grab-multiple-ride-types':
+      return '+$1M / YR · +0.4PP FULFILMENT'
+    case 'grab-influence':
+      return '1 OF 6 OF 120+ · −4PP CANCELLATION'
+    case 'okx-boost':
+      return '~$4B VOLUME · ~75% WEB3 REVENUE'
+    case 'singhealth':
+      return 'PUBLIC HEALTHCARE · BEDSIDE APP'
+    case 'ion-orchard':
+      return 'RETAIL · IN-MALL DELIGHT'
+    case 'roda-chatbot':
+      return 'WHATSAPP CHATBOT · GRAB DRIVERS'
+    default:
+      return ''
+  }
 }
 
-function ProjectCell({ project, index }: { project: typeof visibleProjects[0]; index: number }) {
-  return (
-    <FadeIn delay={index * 40} className="flex flex-col h-full">
-      {/* Top label: ► TITLE */}
-      <div className="mb-3">
-        <ShuffleText
-          text={`▶ ${project.title.toUpperCase()}`}
-          className="font-mono text-[14px] font-bold tracking-[0.12em] inline-block"
-          style={{ color: 'var(--text)' }}
-        />
-      </div>
+function ProjectRow({ project, index, isFirst }: { project: typeof visibleProjects[0]; index: number; isFirst: boolean }) {
+  const metric = projectMetric(project.slug)
+  // Stagger: even index = image left, odd index = image right
+  const imageLeft = index % 2 === 0
 
-      {/* Portrait thumbnail */}
-      <Link href={`/work/${project.slug}`} className="group block flex-1">
-        <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
-          {project.coverImage ? (
-            <AsciiImageReveal
-              src={project.coverImage}
-              alt={project.title}
-              className="absolute inset-0 w-full h-full"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'var(--bg-2)' }}>
-              <span className="font-mono text-[9px] tracking-[0.12em]" style={{ color: 'var(--text-3)' }}>
-                [ {project.title} ]
-              </span>
+  return (
+    <FadeIn delay={index * 60}>
+      <Link
+        href={`/work/${project.slug}`}
+        className={
+          isFirst
+            ? "group block pt-12 md:pt-16 lg:pt-20 pb-20 md:pb-28 lg:pb-32"
+            : "group block py-20 md:py-28 lg:py-32"
+        }
+        style={{ borderTop: isFirst ? 'none' : '1px solid var(--border)' }}
+      >
+        <div className="grid grid-cols-12 gap-x-6 md:gap-x-8 lg:gap-x-12 items-center">
+          {/* Image — always first in source order (mobile reads image then text).
+              Sized at col-span-5 (~38% of the 1280px container). Text takes
+              col-span-6, with a 1-col gutter between them (cols 6 or 7 depending
+              on stagger). Total: 5 + 1 + 6 = 12 cols, both flush to container
+              edges. Grayscale + 50% opacity at rest; full color + opacity on
+              hover — image is a quiet anchor that wakes up on engagement. */}
+          <div
+            className={
+              imageLeft
+                ? 'col-span-12 md:col-span-5 mb-10 md:mb-0'
+                : 'col-span-12 md:col-span-5 md:col-start-8 md:order-last mb-10 md:mb-0'
+            }
+            style={{ pointerEvents: 'none' }}
+          >
+            <div className="relative overflow-hidden" style={{ aspectRatio: '3/2' }}>
+              {project.coverImage ? (
+                <img
+                  src={project.coverImage}
+                  alt={project.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : metric ? (
+                <div
+                  className="absolute inset-0 flex flex-col justify-center items-start px-6 md:px-10 lg:px-12"
+                  style={{
+                    borderTop: '1px solid var(--border)',
+                    borderBottom: '1px solid var(--border)',
+                  }}
+                >
+                  {metric.split(' · ').map((part, i) => (
+                    <p
+                      key={i}
+                      className="font-mono font-bold uppercase"
+                      style={{
+                        color: 'var(--text)',
+                        fontSize: 'clamp(28px, 3.6vw, 52px)',
+                        lineHeight: 1.05,
+                        letterSpacing: '-0.01em',
+                      }}
+                    >
+                      {part}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
             </div>
-          )}
+          </div>
+
+          {/* Text */}
+          <div
+            className={
+              imageLeft
+                ? 'col-span-12 md:col-span-6 md:col-start-7'
+                : 'col-span-12 md:col-span-6 md:col-start-1'
+            }
+          >
+            {/* Category + year — small mono label in brackets */}
+            <p
+              className="font-mono text-[10px] md:text-[11px] tracking-[0.14em] uppercase mb-7 md:mb-9"
+              style={{ color: 'var(--text-3)' }}
+            >
+              [ {project.category.toUpperCase()} · {project.year} ]
+            </p>
+
+            {/* Headline — display-scale, capped to editorial column.
+                font-normal because Space Mono is loaded at 400/700 only;
+                weight 200 silently fell back to 400. Display impact comes
+                from scale + uppercase + mono, not weight. */}
+            <h3
+              className="font-display font-normal uppercase mb-7 max-w-[640px]"
+              style={{
+                color: 'var(--text)',
+                fontSize: 'clamp(36px, 4.4vw, 60px)',
+                lineHeight: 1.05,
+                letterSpacing: '-0.015em',
+              }}
+            >
+              {project.title}
+            </h3>
+
+            {/* Metric — receipts at display scale. Hidden when there's no
+                cover image, since the image slot promotes the metric to
+                hero scale already. */}
+            {metric && project.coverImage && (
+              <p
+                className="font-mono font-bold mb-8"
+                style={{
+                  color: 'var(--text)',
+                  fontSize: 'clamp(15px, 1.4vw, 19px)',
+                  letterSpacing: '0.08em',
+                  lineHeight: 1.35,
+                }}
+              >
+                {metric}
+              </p>
+            )}
+
+            {/* Summary */}
+            <p
+              className="font-display text-[15px] md:text-[16px] font-normal mb-9 max-w-[480px]"
+              style={{
+                color: 'var(--text)',
+                lineHeight: 1.65,
+                letterSpacing: '0.005em',
+              }}
+            >
+              {project.summary}
+            </p>
+
+            {/* CTA — arrow slides right on row hover */}
+            <span
+              className="cta-view font-mono text-[14px] md:text-[15px] font-bold tracking-[0.14em] uppercase inline-flex items-baseline gap-[0.5em]"
+              style={{ color: 'var(--text)' }}
+            >
+              VIEW CASE STUDY
+              <span className="cta-view-arrow inline-block">→</span>
+            </span>
+          </div>
         </div>
       </Link>
-
-      {/* Bottom codename */}
-      <div className="mt-3">
-        <ShuffleText
-          text={projectCode(project.slug, project.year)}
-          className="font-mono text-[9px] tracking-[0.1em] inline-block"
-          style={{ color: 'var(--text-3)' }}
-        />
-      </div>
     </FadeIn>
   )
 }
 
 export default function Work() {
-  const [activeIndex] = useState(0)
   const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
@@ -74,54 +182,38 @@ export default function Work() {
     localStorage.setItem('showAllProjects', next ? '1' : '0')
   }
 
-  const pad2 = (n: number) => String(n).padStart(2, '0')
-  const total = projects.length
-
   return (
     <section id="work" data-bg="light" className="relative">
 
       {/* Top label */}
-      <div className="px-4 md:px-8 lg:px-10 pt-16 md:pt-24 pb-8">
-        <p><span className="font-mono text-[14px] md:text-[16px] font-bold tracking-[0.14em] inline-block px-2 py-1" style={{ backgroundColor: '#000', color: '#fff' }}>[ CASE STUDIES ]</span></p>
+      <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8 lg:px-10 pt-16 md:pt-24 pb-4 md:pb-8">
+        <p>
+          <span
+            className="font-mono text-[14px] md:text-[16px] font-bold tracking-[0.14em]"
+            style={{ color: 'var(--text)' }}
+          >
+            [WORKS]
+          </span>
+        </p>
       </div>
 
-      {/* Filmstrip: horizontal row of projects */}
-      <div className="px-4 md:px-8 lg:px-10">
-        {/* Grid col count should match visible project count to avoid left-clustered imbalance.
-            Currently 3 visible (Grab / OKX / SingHealth). Bump when unhiding projects. */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-x-3 md:gap-x-6 gap-y-10">
-          {projects.map((project, i) => (
-            <ProjectCell key={project.slug} project={project} index={i} />
-          ))}
-        </div>
+      {/* Editorial stack — one project per row, staggered */}
+      <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8 lg:px-10">
+        {projects.map((project, i) => (
+          <ProjectRow key={project.slug} project={project} index={i} isFirst={i === 0} />
+        ))}
       </div>
 
-      {/* Bottom status bar — carlesfaus pattern */}
-      <div className="px-4 md:px-8 lg:px-10 pt-10 md:pt-14 pb-10 md:pb-14 border-t mt-14 md:mt-20" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex flex-wrap items-baseline justify-between gap-y-4 gap-x-8 font-mono text-[10px] tracking-[0.12em]" style={{ color: 'var(--text-3)' }}>
-          <div className="flex items-center gap-2">
-            <span>YOU ARE VIEWING SELECTED WORK</span>
-            <span className="tracking-[0.3em]">▶ ▶ ▶</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span style={{ color: 'var(--text)' }}>{pad2(activeIndex + 1)}</span>
-            <span>/</span>
-            <span>{pad2(total)}</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <BracketLink href="https://linkedin.com/in/kiatyingda" external>LinkedIn</BracketLink>
-            <BracketLink href="mailto:kiat.yingda@gmail.com">Contact</BracketLink>
-            <button
-              onClick={toggleAll}
-              className="font-mono text-[10px] tracking-[0.12em] opacity-20 hover:opacity-70 transition-opacity"
-              style={{ color: 'var(--text)' }}
-            >
-              {showAll ? '[ − ]' : '[ + ]'}
-            </button>
-          </div>
-        </div>
+      {/* Quiet section close — [+] toggle reveals hidden projects */}
+      <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8 lg:px-10 pt-6 md:pt-8 pb-8 md:pb-10 mt-10 md:mt-14 flex justify-end">
+        <button
+          onClick={toggleAll}
+          aria-label={showAll ? 'Hide archived projects' : 'Show archived projects'}
+          className="font-mono text-[12px] tracking-[0.12em] opacity-20 hover:opacity-70 transition-opacity px-3 py-2"
+          style={{ color: 'var(--text)' }}
+        >
+          {showAll ? '[ − ]' : '[ + ]'}
+        </button>
       </div>
 
     </section>
