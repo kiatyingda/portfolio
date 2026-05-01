@@ -336,10 +336,10 @@ export const projects: Project[] = [
     },
   },
 
-  // ── 2. Company-Wide Influence — Grab ────────────────────────────────────
+  // ── 2. Org Influence — Grab ─────────────────────────────────────────────
   {
     slug: 'grab-influence',
-    title: 'Company-Wide Influence',
+    title: 'Org Influence',
     company: 'Grab',
     year: '2021–2024',
     category: 'Design Organisation · Frameworks',
@@ -369,7 +369,7 @@ export const projects: Project[] = [
           gap: 'wide',
           position: '1 of 4',
           number: '01',
-          heading: 'Company-wide design influence',
+          heading: 'Org-wide design influence',
         },
         {
           type: 'text',
