@@ -7,6 +7,10 @@ export interface ProjectMeta {
   year: string
   category: string
   summary: string
+  /** Display-scale lede — the emotional hook. One thought, ≤12 words. Falls back to `summary` if absent. */
+  hook?: string
+  /** Body-scale lede — what you did. One sentence. Renders below the hook. */
+  scope?: string
   coverImage?: string
   splineUrl?: string
   heroVideo?: string
@@ -106,6 +110,8 @@ export const projects: Project[] = [
     year: '2021–2024',
     category: 'Consumer · Marketplace',
     summary: 'Post-COVID driver crunch. Broken marketplace. Led the ride selection system redesign — defined the information architecture, structured how users compare options. +$1M revenue, +0.4pp fulfilment.',
+    hook: 'Post-COVID driver crunch. Broken marketplace.',
+    scope: 'Led the ride selection redesign — restructured how users compare options.',
     coverImage: '/images/grab-cover.jpg',
     heroVideo: '/videos/grab/mtt raw.mov',
     heroVideoFit: 'actual',

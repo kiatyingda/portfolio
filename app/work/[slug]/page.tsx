@@ -814,12 +814,51 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
             ))}
           </div>
         </div>
-        {/* Summary — the story hook. Part of the title slide so "down" advances once to the next beat. */}
-        <div className="aino-inner" style={{ marginTop: sp(4) }}>
-          <div className="col-span-6 md:col-span-5">
-            <SMega text={project.summary} />
+        {/* Lede — three-beat editorial structure: hook (display) → scope (body) → outcome (prominent metrics). */}
+        {project.hook ? (
+          <>
+            {/* Hook — the one thought big enough to stop the eye. */}
+            <div className="aino-inner" style={{ marginTop: sp(4) }}>
+              <div className="col-span-6 md:col-span-5">
+                <p className="font-display font-normal text-[28px] sm:text-[36px] md:text-[44px] lg:text-[52px] leading-[1.05] tracking-[-0.01em] max-w-[820px]"
+                  style={{ color: 'var(--text)' }}>{project.hook}</p>
+              </div>
+            </div>
+            {/* Scope — body-scale description, narrow column. */}
+            {project.scope && (
+              <div className="aino-inner" style={{ marginTop: sp(2) }}>
+                <div className="col-span-6 md:col-span-4">
+                  <p className="font-display font-normal text-[15px] md:text-[16px] leading-[1.65] tracking-[0.015em] max-w-[560px]"
+                    style={{ color: 'var(--text-2, var(--text))', opacity: 0.85 }}>{project.scope}</p>
+                </div>
+              </div>
+            )}
+            {/* Outcome — the proof. Big numbers, sharp rules. The visual closer of the title slide. */}
+            {cs.impact && cs.impact.length > 0 && (
+              <div className="aino-inner" style={{ marginTop: sp(5) }}>
+                <div className="col-span-6">
+                  <p className="font-mono text-[11px] font-bold tracking-[0.14em] mb-6" style={{ color: 'var(--text)' }}>[ OUTCOME ]</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-10 sm:gap-y-0 sm:gap-x-12 md:gap-x-20 py-10 md:py-12" style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+                    {cs.impact.map((item, i) => (
+                      <div key={i}>
+                        <p className="font-display font-extralight text-[64px] sm:text-[80px] md:text-[96px] lg:text-[112px] leading-[0.9] mb-3"
+                          style={{ color: 'var(--text)', letterSpacing: '-0.03em' }}>{item.value}</p>
+                        <p className="font-mono text-[10px] md:text-[11px] tracking-[0.14em]" style={{ color: 'var(--text-3)' }}>{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Legacy fallback — single SMega summary block. */
+          <div className="aino-inner" style={{ marginTop: sp(4) }}>
+            <div className="col-span-6 md:col-span-5">
+              <SMega text={project.summary} />
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* ── Story sections — editorial flow with imagery ──────── */}
