@@ -14,6 +14,8 @@ export interface ProjectMeta {
   heroVideoFit?: 'contain' | 'actual' | 'fill' | 'phone'
   /** Whether the hero video should loop. Default true. */
   heroVideoLoop?: boolean
+  /** Background colour for the hero video section. Defaults to '#000'. */
+  heroVideoBg?: string
   /** Hide from the home grid and case-study prev/next nav (but keep data + direct URL working). */
   hidden?: boolean
   accent?: string
@@ -32,6 +34,7 @@ export interface CaseStudySection {
     | 'comparison'
     | 'outcome'
     | 'chapter'
+    | 'video-masonry'
   bg: 'dark' | 'light'
   label?: string
   heading?: string
@@ -75,6 +78,8 @@ export interface CaseStudySection {
   pannableHeight?: string
   /** Static image thumbnail for a lightbox section. Click opens `image` (or PDF) in a fullscreen modal. */
   thumbnailImage?: string
+  /** Video paths for the video-masonry section type. */
+  videos?: string[]
 }
 
 export interface CaseStudy {
@@ -949,6 +954,45 @@ export const projects: Project[] = [
               title: 'Safety is non-negotiable',
               body: 'Even in a stripped-down chatbot, we couldn\'t compromise on safety features. Some legal requirements were challenging to navigate within chat.',
             },
+          ],
+        },
+      ],
+    },
+  },
+
+  // ── 6. Interaction Archive ────────────────────────────────────────────────
+  {
+    slug: 'interactions',
+    title: 'Interaction Archive',
+    company: 'Various',
+    year: '2021–2024',
+    category: 'Motion · Interaction Design',
+    summary: 'Five interaction explorations across mobile UX, transitions, and gesture-led flows — from Grab, OKX, and personal work.',
+    heroVideo: '/videos/ion/ion-demo.mp4',
+    heroVideoFit: 'fill',
+    heroVideoBg: '#ffffff',
+    caseStudy: {
+      label: 'Motion · 2021–2024',
+      role: 'Product Designer',
+      team: 'Various',
+      duration: '2021 – 2024',
+      impact: [],
+      sections: [
+        {
+          type: 'text',
+          bg: 'light',
+          heading: 'Motion as a design decision',
+          body: 'Interaction design is where product intent meets feel. These five explorations span different contexts — booking flows, onboarding, data dashboards — each testing a different hypothesis about how movement shapes understanding.',
+        },
+        {
+          type: 'video-masonry',
+          bg: 'light',
+          videos: [
+            '/videos/ion/1.mp4',
+            '/videos/ion/2.mp4',
+            '/videos/ion/3.mp4',
+            '/videos/ion/4.mp4',
+            '/videos/ion/5.mp4',
           ],
         },
       ],

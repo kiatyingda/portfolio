@@ -20,6 +20,8 @@ function projectMetric(slug: string): string {
       return 'RETAIL · IN-MALL DELIGHT'
     case 'roda-chatbot':
       return 'WHATSAPP CHATBOT · GRAB DRIVERS'
+    case 'interactions':
+      return 'MOTION · INTERACTION DESIGN'
     default:
       return ''
   }

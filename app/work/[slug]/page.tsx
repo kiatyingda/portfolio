@@ -12,6 +12,7 @@ import SlideKeyboardNav from '@/components/ui/SlideKeyboardNav'
 import PanZoomFrame from '@/components/ui/PanZoomFrame'
 import PanZoomLightbox from '@/components/ui/PanZoomLightbox'
 import ClickToPlayVideo from '@/components/ui/ClickToPlayVideo'
+import VideoCarousel from '@/components/ui/VideoCarousel'
 
 export async function generateStaticParams() {
   return projects.map((p) => ({ slug: p.slug }))
@@ -700,20 +701,29 @@ function OutcomeSection({ s }: { s: CaseStudySection & { type: 'outcome' } }) {
   )
 }
 
+function VideoCarouselSection({ s }: { s: CaseStudySection & { type: 'video-masonry' } }) {
+  return (
+    <section className="aino-section" style={{ marginTop: sp(6), width: '100vw', marginLeft: 'calc(50% - 50vw)', position: 'relative' }}>
+      <VideoCarousel videos={s.videos ?? []} />
+    </section>
+  )
+}
+
 function RenderSection({ section, index }: { section: CaseStudySection; index: number }) {
   const content = (() => {
     switch (section.type) {
-      case 'text':       return <TextSection s={section as CaseStudySection & { type: 'text' }} index={index} />
-      case 'twocol':     return <TwoColSection s={section as CaseStudySection & { type: 'twocol' }} index={index} />
-      case 'stats':      return <StatsSection s={section as CaseStudySection & { type: 'stats' }} />
-      case 'columns':    return <ColumnsSection s={section as CaseStudySection & { type: 'columns' }} />
-      case 'grid':       return <GridSection s={section as CaseStudySection & { type: 'grid' }} />
-      case 'quotes':     return <QuotesSection s={section as CaseStudySection & { type: 'quotes' }} />
-      case 'image':      return <ImageSection s={section as CaseStudySection & { type: 'image' }} />
-      case 'phase':      return <PhaseSection s={section as CaseStudySection & { type: 'phase' }} />
-      case 'comparison': return <ComparisonSection s={section as CaseStudySection & { type: 'comparison' }} />
-      case 'outcome':    return <OutcomeSection s={section as CaseStudySection & { type: 'outcome' }} />
-      case 'chapter':    return <ChapterSection s={section as CaseStudySection & { type: 'chapter' }} />
+      case 'text':          return <TextSection s={section as CaseStudySection & { type: 'text' }} index={index} />
+      case 'twocol':        return <TwoColSection s={section as CaseStudySection & { type: 'twocol' }} index={index} />
+      case 'stats':         return <StatsSection s={section as CaseStudySection & { type: 'stats' }} />
+      case 'columns':       return <ColumnsSection s={section as CaseStudySection & { type: 'columns' }} />
+      case 'grid':          return <GridSection s={section as CaseStudySection & { type: 'grid' }} />
+      case 'quotes':        return <QuotesSection s={section as CaseStudySection & { type: 'quotes' }} />
+      case 'image':         return <ImageSection s={section as CaseStudySection & { type: 'image' }} />
+      case 'phase':         return <PhaseSection s={section as CaseStudySection & { type: 'phase' }} />
+      case 'comparison':    return <ComparisonSection s={section as CaseStudySection & { type: 'comparison' }} />
+      case 'outcome':       return <OutcomeSection s={section as CaseStudySection & { type: 'outcome' }} />
+      case 'chapter':       return <ChapterSection s={section as CaseStudySection & { type: 'chapter' }} />
+      case 'video-masonry': return <VideoCarouselSection s={section as CaseStudySection & { type: 'video-masonry' }} />
       default: return null
     }
   })()
@@ -742,7 +752,7 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
          - 'phone'  → wrapped in a phone device frame (matches MobileMediaBlock aesthetic)
          - default  → contained inside viewport (max height 100%, max width 70%) */}
       {project.heroVideo && (
-        <section data-slide-align="top" data-bg="dark" style={{ backgroundColor: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '14vh 0 6vh' }}>
+        <section data-slide-align="top" data-bg={project.heroVideoBg ? 'light' : 'dark'} style={{ backgroundColor: project.heroVideoBg ?? '#000', height: project.heroVideoBg ? 'auto' : '100vh', display: 'flex', alignItems: project.heroVideoBg ? 'flex-start' : 'center', justifyContent: 'center', overflow: project.heroVideoBg ? 'visible' : 'hidden', padding: project.heroVideoBg ? '0' : '14vh 0 6vh' }}>
           {project.heroVideoFit === 'phone' ? (
             <div style={{
               height: '100%',
@@ -770,7 +780,7 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
                 project.heroVideoFit === 'actual'
                   ? { width: '1500px', height: 'auto', maxWidth: 'none', maxHeight: 'none', display: 'block', flexShrink: 0 }
                   : project.heroVideoFit === 'fill'
-                  ? { maxHeight: '100%', maxWidth: '100%', width: 'auto', height: 'auto', display: 'block' }
+                  ? { width: '100vw', height: 'auto', display: 'block', flexShrink: 0 }
                   : { maxHeight: '100%', maxWidth: '70%', width: 'auto', height: 'auto', display: 'block' }
               }
             />
